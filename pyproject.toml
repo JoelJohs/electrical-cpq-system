@@ -1,0 +1,51 @@
+[project]
+name = "mvp-project"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "Joel Josafat Hernandez Saucedo", email = "jojohersa21@gmail.com" }
+]
+requires-python = ">=3.14"
+dependencies = [
+    "django>=6.1.1",
+    "django-environ>=0.14.0",
+    "gunicorn>=26.2.0",
+    "psycopg[binary]>=3.3.6",
+    "whitenoise>=6.12.0",
+]
+
+[project.scripts]
+mvp-project = "mvp_project:main"
+
+[build-system]
+requires = ["uv_build>=0.12.17,<0.13.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "pre-commit>=4.6.2",
+    "ruff>=0.16.10",
+]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 88
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort (orden de imports)
+    "DJ",  # flake8-django (mejores prácticas Django)
+    "B",   # flake8-bugbear (errores comunes)
+]
+ignore = [
+    "DJ008", # model-without-dunder-str (ignorar mientras se itera rápido)
+]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+

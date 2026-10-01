@@ -1,0 +1,20 @@
+[Unit]
+Description=Gunicorn daemon para MVP Django
+After=network.target
+
+[Service]
+User=www-data
+Group=www-data
+WorkingDirectory=/var/www/mvp-project
+# uv ejecuta gunicorn utilizando el lockfile del proyecto y su venv aislado
+ExecStart=/root/.local/bin/uv run gunicorn config.wsgi:application \
+          --workers 3 \
+          --bind unix:/run/gunicorn.sock \
+          --access-logfile - \
+          --error-logfile -
+
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
