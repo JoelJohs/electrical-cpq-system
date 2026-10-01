@@ -9,11 +9,23 @@
 
 ## Fase 2: Configuración Inicial y Repositorio
 
-- [x] Inicializar el repositorio Git con branches protegidas (main protegida, desarrollo en ramas de feature).
-- [x] Definir estándares de commits (por ejemplo, Conventional Commits: feat:, fix:, chore:).
-- [x] Configurar variables de entorno (.env.example versionado, secretos fuera del repo).
-- [x] Configurar linter y formateador de código (Ruff, etc.).
-- [ ] Desplegar un "Hello World" en el entorno de staging/producción (Vercel, Render, Railway o VPS) para tener CI/CD automatizado desde el día 1.
+Verificación local: `./scripts/check_phase2.sh --local` → 13 PASS · 0 FAIL · 3 PEND.
+
+**Completado (verificado en local):**
+
+- [x] Inicializar el repositorio Git.
+- [x] Definir estándares de commits (Conventional Commits: feat:, fix:, chore:, ...). *Verificado: hook `commit-msg` instalado, historial cumple el estándar.*
+- [x] Configurar variables de entorno (.env.example versionado, secretos fuera del repo). *Verificado: `.env` ignorado, ningún secreto en el historial.*
+- [x] Configurar linter y formateador de código (Ruff + pre-commit). *Verificado: `ruff check`, `ruff format --check` y `pre-commit run --all-files` en verde.*
+- [x] Configurar el pipeline de CI (`.github/workflows/ci.yml`: lint, format y Django checks). *Existe y es válido, pero nunca se ha ejecutado: falta el remoto.*
+- [x] Hello World funcional en local (`GET /health/` → `{"status": "ok"}`). *Verificado con servidor real levantado por el script.*
+
+**Pendiente (requiere remoto / infraestructura):**
+
+- [ ] Crear el remoto y subir el repositorio (`git remote add origin ...`).
+- [ ] Proteger `main` (revisión obligatoria + status checks) y desarrollar en ramas de feature.
+- [ ] Ejecutar la CI en GitHub y verificarla en verde sobre un PR.
+- [ ] Desplegar el "Hello World" en staging/producción (Vercel, Render, Railway o VPS) para tener CI/CD automatizado desde el día 1. *Criterio: `HEALTH_URL=https://tu-app ./scripts/check_phase2.sh` en verde.*
 
 ## Fase 3: Arquitectura Base y Datos
 
