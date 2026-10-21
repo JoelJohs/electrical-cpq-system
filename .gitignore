@@ -30,3 +30,6 @@ staticfiles/
 
 # Ruff / Linters
 .ruff_cache/
+
+# Codex / AI tool cache
+.codex/

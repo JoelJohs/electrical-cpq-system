@@ -1,0 +1,30 @@
+name: CD Pipeline - Deploy to Ubuntu VPS
+
+on:
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: production-deployment
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy to Ubuntu 24.04 LTS VPS
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Execute remote deployment via SSH
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SSH_PORT || 22 }}
+          script_stop: true
+          script: |
+            echo "Conectado al VPS. Ejecutando despliegue de mvp-project..."
+            /var/www/mvp-project/deploy/deploy.sh

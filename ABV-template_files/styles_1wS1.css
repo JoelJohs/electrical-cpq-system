@@ -1,0 +1,240 @@
+/* ============================================== */
+/* ESTILO DEL BOTÓN FLOTANTE */
+/* ============================================== */
+.boton-flotante {
+    position: fixed; /* Lo fija en la ventana del navegador */
+    bottom: 20px;    /* 20px desde la parte inferior */
+    right: auto;     /* 20px desde la derecha */
+    left: 20px;
+    z-index: 1000;   /* Asegura que esté por encima de otros elementos */
+    background-color: #007bff; /* Color primario */
+    color: white;
+    padding: 15px 20px;
+    border: none;
+    border-radius: 50px; /* Borde redondeado para el estilo de botón flotante */
+    cursor: pointer;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    font-size: 16px;
+    transition: background-color 0.3s;
+}
+
+.boton-flotante:hover {
+    background-color: #0056b3;
+}
+
+/* ============================================== */
+/* ESTILOS DEL MODAL (Ventana Flotante) */
+/* ============================================== */
+.modal {
+    display: none; /* Por defecto estará oculto (hidden) */
+    position: fixed; 
+    z-index: 2000; /* Más alto que el botón para cubrir toda la página */
+    left: 0;
+    top: 0;
+    width: 100%; 
+    height: 100%;
+    overflow: auto; /* Habilita el scroll si el contenido es demasiado largo */
+    background-color: rgba(0,0,0,0.4); /* Fondo negro semitransparente */
+}
+
+/* Contenedor del contenido dentro del modal */
+.modal-contenido {
+    background-color: #fefefe;
+    margin: 10% auto; /* 10% desde arriba y centrado horizontalmente */
+    padding: 20px;
+    border: 1px solid #888;
+    width: 80%; /* Ancho preferido, puedes ajustar */
+    max-width: 500px; /* Máximo ancho para que no se vea gigante */
+    border-radius: 8px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+}
+
+/* Estilo del botón de cierre (la 'x') */
+.cerrar-modal {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+}
+
+.cerrar-modal:hover,
+.cerrar-modal:focus {
+    color: black;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.whatsapp-float {
+    position: fixed;
+    width: 80px;
+    height: 80px;
+    bottom: 20px; /* Distancia desde abajo */
+    right: 20px; /* Distancia desde la derecha */
+    background-color: #25d366; /* Color de fondo de WhatsApp */
+    color: #FFF;
+    border-radius: 50px; /* Hace el botón circular */
+    text-align: center;
+    font-size: 30px;
+    box-shadow: 2px 2px 3px #999;
+    z-index: 100; /* Asegura que esté por encima de otros elementos */
+    display: flex; /* Para centrar la imagen */
+    justify-content: center; /* Centrado horizontal */
+    align-items: center; /* Centrado vertical */
+}
+
+.whatsapp-float img {
+    width: 55px; /* Tamaño de la imagen dentro del botón */
+    height: 55px;
+}
+@media (max-width: 400px) {
+  .whatsapp-float {
+    position: fixed;
+    width: 50px;
+    height: 50px;
+    bottom: 20px; /* Distancia desde abajo */
+    right: 20px; /* Distancia desde la derecha */
+    background-color: #25d366; /* Color de fondo de WhatsApp */
+    color: #FFF;
+    border-radius: 50px; /* Hace el botón circular */
+    text-align: center;
+    font-size: 30px;
+    box-shadow: 2px 2px 3px #999;
+    z-index: 100; /* Asegura que esté por encima de otros elementos */
+    display: flex; /* Para centrar la imagen */
+    justify-content: center; /* Centrado horizontal */
+    align-items: center; /* Centrado vertical */
+}
+
+.whatsapp-float img {
+    min-width: 30px;
+    min-height: 30px;
+    width: 30px; /* Tamaño de la imagen dentro del botón */
+    height: 30px;
+}
+}
+
+html {
+  scroll-padding-top: 4rem; /* Ajusta al alto de la navbar */
+}
+body{
+  background-color: #E6E8E5;
+}
+main {
+  position: relative;
+  top: 4rem;
+}
+
+#nav {
+  background: #000;
+}
+
+/* Logo y menú con sus propios márgenes */
+#nav .navbar-brand {
+  margin-left: 1rem;
+}
+
+#nav .navbar-nav {
+  margin-right: 1rem;
+}
+
+/* Altura del logo */
+#logo {
+  height: 4rem;
+  width: auto;
+}
+
+.mivi{
+    min-height: 50vh;
+    max-height: auto;
+    margin-top: 1%;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    align-items: center;
+    justify-content: center;
+}
+
+@media (min-width: 768px) and (max-width: 1440px) {
+  #nav .nav-link i {
+    font-size: clamp(0.5rem, 2vw, 1.5rem);
+  }
+}
+
+
+
+
+.footer-container {
+  background-color: #1E1E1E;
+  color: white;
+  padding: 1.5rem 3rem;
+  font-family: sans-serif;
+}
+
+/* Títulos y párrafos */
+.footer-container h2 {
+  margin-bottom: 1rem;
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+.footer-container p {
+  margin-bottom: 0.5rem;
+  font-size: 1rem;
+  line-height: 1.4;
+}
+
+/* Enlaces */
+.footer-container a {
+  color: white;
+  text-decoration: none;
+  transition: all 0.3s;
+}
+.footer-container a:hover {
+  color: #9da5ad;
+  transform: scale(1.05);
+    gap: 1rem;
+}
+
+/* Botón “Cómo llegar” */
+.direction-button {
+  display: inline-block;
+  margin-top: 0.5rem;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  color: #1E1E1E !important;
+  background-color: #f8f9fa !important;
+  border: 1px solid #1E1E1E;
+  border-radius: 0.25rem;
+  transition: background-color 0.2s, color 0.2s;
+}
+.direction-button:hover {
+  background-color: #1E1E1E !important;
+  color: white !important;
+}
+
+/* Pie */
+.footer-bottom hr {
+  border-color: #444;
+}
+.font-bold {
+  font-weight: bold;
+}
+
+#navbar-search {
+  width: 250px;
+  padding: 0.375rem 0.75rem;
+  border-radius: 0.25rem;
+  border: 1px solid #ccc;
+}
+
+#navbar-search-results {
+  top: 100%;
+  left: 0;
+  z-index: 1050;
+  max-height: 300px;
+  overflow-y: auto;
+  display: none;
+}
+
+#navbar-search-results.show {
+  display: block;
+}

@@ -6,8 +6,9 @@ After=network.target
 User=www-data
 Group=www-data
 WorkingDirectory=/var/www/mvp-project
-# uv ejecuta gunicorn utilizando el lockfile del proyecto y su venv aislado
-ExecStart=/root/.local/bin/uv run gunicorn config.wsgi:application \
+EnvironmentFile=-/var/www/mvp-project/.env
+# uv ejecuta gunicorn utilizando el lockfile del proyecto y su venv hermético
+ExecStart=/usr/local/bin/uv run gunicorn config.wsgi:application \
           --workers 3 \
           --bind unix:/run/gunicorn.sock \
           --access-logfile - \
@@ -15,6 +16,7 @@ ExecStart=/root/.local/bin/uv run gunicorn config.wsgi:application \
 
 Restart=always
 RestartSec=5
+UMask=007
 
 [Install]
 WantedBy=multi-user.target

@@ -9,9 +9,12 @@ authors = [
 requires-python = ">=3.14"
 dependencies = [
     "django>=6.1.1",
+    "django-cors-headers>=4.7.0",
     "django-environ>=0.14.0",
+    "django-ninja>=1.3.0",
     "gunicorn>=26.2.0",
     "psycopg[binary]>=3.3.6",
+    "pydantic>=2.10",
     "whitenoise>=6.12.0",
 ]
 
@@ -31,6 +34,7 @@ dev = [
 [tool.ruff]
 target-version = "py312"
 line-length = 88
+extend-exclude = [".specify"]
 
 [tool.ruff.lint]
 select = [
@@ -44,6 +48,9 @@ select = [
 ignore = [
     "DJ008", # model-without-dunder-str (ignorar mientras se itera rápido)
 ]
+
+[tool.ruff.lint.per-file-ignores]
+"**/migrations/*" = ["E501"]
 
 [tool.ruff.format]
 quote-style = "double"

@@ -34,3 +34,9 @@ jobs:
           SECRET_KEY: "ci-insecure-test-key-only"
           DEBUG: "False"
         run: uv run python manage.py check
+
+      - name: Run Automated Tests
+        env:
+          SECRET_KEY: "ci-insecure-test-key-only"
+          DEBUG: "False"
+        run: uv run python manage.py test tests catalog quotes

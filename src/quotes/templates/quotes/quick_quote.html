@@ -1,0 +1,282 @@
+{% extends "quotes/base_quotes.html" %}
+
+{% block title %}Nueva Cotización Rápida - ABV ELECTRIC SUPPLY{% endblock %}
+
+{% block content %}
+<div x-data="quickQuoteApp()" class="space-y-6">
+    <!-- Encabezado -->
+    <div class="bg-white p-6 rounded-xl border border-abv-border shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+            <h1 class="text-2xl font-extrabold text-abv-dark tracking-tight">Nueva Cotización Técnica</h1>
+            <p class="text-sm text-neutral-500 mt-1">Selecciona productos del catálogo y genera tu lista de materiales técnicos.</p>
+        </div>
+        <div class="flex items-center gap-2">
+            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-neutral-100 text-neutral-700 border border-neutral-300">
+                <i class="fas fa-calculator mr-1.5 text-abv-blue"></i> CPQ Industrial
+            </span>
+        </div>
+    </div>
+
+    <!-- Layout 65% Catálogo / 35% Panel Lateral -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+        <!-- Columna Principal: Catálogo Interactivo (65% / 8 cols) -->
+        <div class="lg:col-span-8 space-y-4">
+            <div class="bg-white p-4 rounded-xl border border-abv-border shadow-sm">
+                <!-- Buscador y Filtros -->
+                <div class="flex flex-col sm:flex-row gap-3 items-center justify-between">
+                    <div class="relative w-full sm:w-80">
+                        <input
+                            type="text"
+                            x-model="searchQuery"
+                            placeholder="Buscar por SKU o descripción..."
+                            class="w-full pl-9 pr-3 py-2 text-sm border border-abv-border rounded-lg focus:outline-none focus:ring-2 focus:ring-abv-blue font-mono"
+                        >
+                        <i class="fas fa-search absolute left-3 top-3 text-neutral-400 text-xs"></i>
+                    </div>
+                    <div class="flex items-center gap-2 w-full sm:w-auto">
+                        <select
+                            x-model="selectedType"
+                            class="w-full sm:w-auto px-3 py-2 text-sm border border-abv-border rounded-lg bg-white text-neutral-700 focus:outline-none focus:ring-2 focus:ring-abv-blue font-semibold"
+                        >
+                            <option value="">Todos los tipos</option>
+                            <option value="BOARD">Tableros / Gabinetes</option>
+                            <option value="COMPONENT">Componentes / Interruptores</option>
+                            <option value="ACCESSORY">Accesorios</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Lista de Productos en Tarjetas Técnicas -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {% for product in products %}
+                <div
+                    x-show="matchesProduct('{{ product.sku }}', '{{ product.name }}', '{{ product.product_type }}')"
+                    class="bg-white p-4 rounded-xl border border-abv-border shadow-sm hover:border-abv-blue transition flex flex-col justify-between"
+                >
+                    <div>
+                        <div class="flex items-start justify-between gap-2">
+                            <span class="font-mono text-xs font-bold text-abv-blue bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
+                                {{ product.sku }}
+                            </span>
+                            <span class="text-[11px] font-bold uppercase tracking-wider text-neutral-500">
+                                {{ product.product_type }}
+                            </span>
+                        </div>
+                        <h3 class="text-sm font-bold text-abv-dark mt-2 leading-snug">{{ product.name }}</h3>
+
+                        <!-- Atributos electromecánicos -->
+                        <div class="mt-2.5 flex flex-wrap gap-1.5 text-xs font-mono">
+                            {% if product.specs.espacios %}
+                            <span class="bg-neutral-100 text-neutral-700 px-2 py-0.5 rounded border border-neutral-200">
+                                {{ product.specs.espacios }} Polos / Espacios
+                            </span>
+                            {% endif %}
+                            {% if product.specs.amperaje_max %}
+                            <span class="bg-neutral-100 text-neutral-700 px-2 py-0.5 rounded border border-neutral-200">
+                                {{ product.specs.amperaje_max }}A Max
+                            </span>
+                            {% endif %}
+                            {% if product.specs.polos %}
+                            <span class="bg-neutral-100 text-neutral-700 px-2 py-0.5 rounded border border-neutral-200">
+                                {{ product.specs.polos }} Polo(s)
+                            </span>
+                            {% endif %}
+                            {% if product.specs.amperaje %}
+                            <span class="bg-neutral-100 text-neutral-700 px-2 py-0.5 rounded border border-neutral-200">
+                                {{ product.specs.amperaje }}A
+                            </span>
+                            {% endif %}
+                            {% if product.specs.montaje %}
+                            <span class="bg-neutral-100 text-neutral-700 px-2 py-0.5 rounded border border-neutral-200 capitalize">
+                                {{ product.specs.montaje }}
+                            </span>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="mt-4 pt-3 border-t border-neutral-100 flex items-center justify-between">
+                        {% if product.product_type == 'BOARD' %}
+                        <button
+                            type="button"
+                            @click="selectBoard('{{ product.sku }}', '{{ product.name }}', {{ product.specs.espacios|default:0 }})"
+                            class="w-full inline-flex items-center justify-center px-3 py-1.5 bg-neutral-800 hover:bg-neutral-900 text-white text-xs font-bold rounded-lg transition"
+                        >
+                            <i class="fas fa-microchip mr-1.5 text-yellow-400"></i> Seleccionar como Tablero
+                        </button>
+                        {% else %}
+                        <button
+                            type="button"
+                            @click="addItem('{{ product.sku }}', '{{ product.name }}', '{{ product.product_type }}')"
+                            class="w-full inline-flex items-center justify-center px-3 py-1.5 bg-abv-blue hover:bg-abv-blue-hover text-white text-xs font-bold rounded-lg transition"
+                        >
+                            <i class="fas fa-plus mr-1.5"></i> Agregar a Cotización
+                        </button>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Columna Lateral: Configuración y Partidas (35% / 4 cols) -->
+        <div class="lg:col-span-4 space-y-4">
+            <form method="POST" action="/quotes/new/" class="bg-white p-5 rounded-xl border border-abv-border shadow-sm space-y-4">
+                {% csrf_token %}
+                <h2 class="text-base font-bold text-abv-dark pb-2 border-b border-neutral-200 flex items-center justify-between">
+                    <span><i class="fas fa-file-invoice mr-2 text-abv-blue"></i> Datos del Proyecto</span>
+                    <span class="text-xs font-normal text-neutral-500 font-mono">Borrador</span>
+                </h2>
+
+                <div>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-neutral-700 mb-1">Nombre o Cliente *</label>
+                    <input
+                        type="text"
+                        name="client_name"
+                        x-model="clientName"
+                        required
+                        placeholder="Ej. Planta Monterrey"
+                        class="w-full px-3 py-2 text-sm border border-abv-border rounded-lg focus:outline-none focus:ring-2 focus:ring-abv-blue"
+                    >
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-neutral-700 mb-1">Referencia de Obra / Proyecto</label>
+                    <input
+                        type="text"
+                        name="project_reference"
+                        x-model="projectReference"
+                        placeholder="Ej. Línea 3 CCM"
+                        class="w-full px-3 py-2 text-sm border border-abv-border rounded-lg focus:outline-none focus:ring-2 focus:ring-abv-blue"
+                    >
+                </div>
+
+                <!-- Selección de Ensamble de Tablero -->
+                <div class="p-3 bg-abv-surface-alt rounded-lg border border-neutral-200 space-y-2">
+                    <div class="flex items-center justify-between">
+                        <label class="flex items-center text-xs font-bold text-neutral-800 cursor-pointer">
+                            <input type="checkbox" name="is_board_assembly" x-model="isBoardAssembly" class="rounded text-abv-blue focus:ring-abv-blue mr-2">
+                            ¿Es ensamble de tablero?
+                        </label>
+                    </div>
+
+                    <div x-show="isBoardAssembly" class="space-y-1.5 pt-1">
+                        <label class="block text-[11px] font-bold uppercase tracking-wider text-neutral-600">Tablero Anfitrión (SKU)</label>
+                        <input
+                            type="text"
+                            name="board_sku"
+                            x-model="selectedBoardSku"
+                            :required="isBoardAssembly"
+                            placeholder="SKU del tablero (ej. TAB-NQ-225)"
+                            class="w-full px-3 py-1.5 text-xs font-mono border border-abv-border rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-abv-blue"
+                        >
+                        <p x-show="selectedBoardName" class="text-xs text-neutral-600 font-semibold" x-text="selectedBoardName"></p>
+                    </div>
+                </div>
+
+                <!-- Partidas seleccionadas -->
+                <div>
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-xs font-bold uppercase tracking-wider text-neutral-700">
+                            Partidas Agregadas (<span x-text="items.length"></span>)
+                        </span>
+                        <button
+                            type="button"
+                            x-show="items.length > 0"
+                            @click="items = []"
+                            class="text-xs text-red-600 hover:underline"
+                        >
+                            Limpiar
+                        </button>
+                    </div>
+
+                    <div x-show="items.length === 0" class="p-4 border-2 border-dashed border-neutral-200 rounded-lg text-center text-xs text-neutral-400">
+                        No hay componentes agregados aún. Selecciona del catálogo a la izquierda.
+                    </div>
+
+                    <div class="space-y-2 max-h-60 overflow-y-auto pr-1">
+                        <template x-for="(it, idx) in items" :key="idx">
+                            <div class="flex items-center justify-between p-2.5 bg-neutral-50 rounded-lg border border-neutral-200 text-xs">
+                                <div class="overflow-hidden pr-2">
+                                    <div class="font-mono font-bold text-abv-dark truncate" x-text="it.sku"></div>
+                                    <div class="text-[11px] text-neutral-500 truncate" x-text="it.name"></div>
+                                </div>
+                                <div class="flex items-center gap-2 shrink-0">
+                                    <input
+                                        type="number"
+                                        min="1"
+                                        x-model.number="it.quantity"
+                                        class="w-12 px-1.5 py-1 text-center font-bold border border-abv-border rounded text-xs"
+                                    >
+                                    <button
+                                        type="button"
+                                        @click="removeItem(idx)"
+                                        class="text-neutral-400 hover:text-red-600"
+                                    >
+                                        <i class="fas fa-trash-can"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+
+                    <!-- Input oculto para enviar partidas serializadas en JSON -->
+                    <input type="hidden" name="items_json" :value="JSON.stringify(items)">
+                </div>
+
+                <button
+                    type="submit"
+                    :disabled="!clientName || (isBoardAssembly && !selectedBoardSku)"
+                    class="w-full py-2.5 px-4 bg-abv-green hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold text-sm rounded-lg shadow transition flex items-center justify-center gap-2"
+                >
+                    <i class="fas fa-check"></i> Crear Cotización
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    function quickQuoteApp() {
+        return {
+            searchQuery: '',
+            selectedType: '',
+            clientName: '',
+            projectReference: '',
+            isBoardAssembly: false,
+            selectedBoardSku: '',
+            selectedBoardName: '',
+            items: [],
+
+            matchesProduct(sku, name, type) {
+                const q = this.searchQuery.toLowerCase();
+                const matchesSearch = !q || sku.toLowerCase().includes(q) || name.toLowerCase().includes(q);
+                const matchesType = !this.selectedType || type === this.selectedType;
+                return matchesSearch && matchesType;
+            },
+
+            selectBoard(sku, name, spaces) {
+                this.isBoardAssembly = true;
+                this.selectedBoardSku = sku;
+                this.selectedBoardName = `${name} (${spaces} espacios)`;
+            },
+
+            addItem(sku, name, type) {
+                const existing = this.items.find(i => i.sku === sku);
+                if (existing) {
+                    existing.quantity += 1;
+                } else {
+                    this.items.push({ sku, name, type, quantity: 1 });
+                }
+            },
+
+            removeItem(idx) {
+                this.items.splice(idx, 1);
+            }
+        }
+    }
+</script>
+{% endblock %}
