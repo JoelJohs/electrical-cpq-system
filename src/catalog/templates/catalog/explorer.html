@@ -1,290 +1,644 @@
 {% extends "catalog/base.html" %}
+{% load static %}
 
-{% block title %}Consulta de Compatibilidades - ABV ELECTRIC SUPPLY{% endblock %}
+{% block title %}Asistente de Compatibilidad - ABV ELECTRIC SUPPLY{% endblock %}
 
 {% block extra_head %}
 <style>
     @media print {
-        nav, footer, .no-print {
+        header, footer, .no-print {
             display: none !important;
         }
         body {
             background-color: #ffffff !important;
             color: #000000 !important;
         }
-        .print-area {
+        .print-sheet {
+            display: block !important;
+            width: 100% !important;
+            margin: 0 !important;
+            padding: 20px !important;
             border: none !important;
             box-shadow: none !important;
-            padding: 0 !important;
-            width: 100% !important;
         }
+    }
+    .print-sheet {
+        display: none;
     }
 </style>
 {% endblock %}
 
 {% block content %}
-<div x-data="compatibilityExplorerApp()" class="space-y-6">
+<div x-data="compatibilityExplorerApp()" x-cloak class="space-y-6">
 
-    <!-- Encabezado -->
-    <div class="no-print bg-white p-6 rounded-xl border border-abv-border shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-            <h1 class="text-2xl font-extrabold text-abv-dark tracking-tight">Asistente de Compatibilidad Eléctrica</h1>
-            <p class="text-sm text-neutral-500 mt-1">
-                Selecciona un equipo base (tablero o interruptor) para explorar sus componentes compatibles, accesorios y alternativas.
-            </p>
+    <!-- Notificación Toast Flotante -->
+    <div
+        x-show="toast.visible"
+        x-transition:enter="transition ease-out duration-300"
+        x-transition:enter-start="opacity-0 transform translate-y-2"
+        x-transition:enter-end="opacity-100 transform translate-y-0"
+        x-transition:leave="transition ease-in duration-200"
+        x-transition:leave-start="opacity-100 transform translate-y-0"
+        x-transition:leave-end="opacity-0 transform translate-y-2"
+        class="fixed bottom-5 right-5 z-50 bg-[#1E1E1E] text-white px-4 py-3 rounded-lg shadow-xl border border-neutral-700 flex items-center space-x-3 text-xs"
+    >
+        <i :class="toast.icon || 'fas fa-check-circle text-abv-green'"></i>
+        <span x-text="toast.message" class="font-medium"></span>
+    </div>
+
+    <!-- Barra Superior de Navegación del Catálogo y Filtros Rápidos (no-print) -->
+    <div class="no-print bg-white p-5 rounded-xl border border-abv-border shadow-sm space-y-4">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+                <h1 class="text-xl sm:text-2xl font-extrabold text-abv-dark tracking-tight">Catálogo Técnico de Compatibilidad</h1>
+                <p class="text-xs sm:text-sm text-neutral-600 mt-1">
+                    Selecciona cualquier equipo, tablero, interruptor o accesorio para consultar dónde se instala o qué componentes admite.
+                </p>
+            </div>
+            
+            <!-- Búsqueda rápida en catálogo -->
+            <div class="w-full md:w-80 relative">
+                <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 text-xs"></i>
+                <input
+                    type="text"
+                    x-model="searchQuery"
+                    placeholder="Buscar por código (ej. NQ, QO, EDB)..."
+                    class="w-full pl-8 pr-3 py-2 text-xs border border-abv-border rounded-lg bg-neutral-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-abv-blue text-neutral-800 transition"
+                >
+                <button
+                    x-show="searchQuery"
+                    @click="searchQuery = ''"
+                    type="button"
+                    class="absolute right-2.5 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 text-xs"
+                >
+                    <i class="fas fa-times-circle"></i>
+                </button>
+            </div>
         </div>
-        <div class="flex items-center gap-2">
-            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-blue-50 text-abv-blue border border-blue-200">
-                <i class="fas fa-bolt mr-1.5"></i> Consulta Técnica Directa
-            </span>
+
+        <!-- Filtros por tipo de producto y selector rápido -->
+        <div class="pt-3 border-t border-abv-border-subtle flex flex-wrap items-center justify-between gap-3">
+            <div class="flex flex-wrap items-center gap-1.5">
+                <button
+                    type="button"
+                    @click="categoryFilter = 'all'"
+                    :class="categoryFilter === 'all' ? 'bg-[#1E1E1E] text-white border-[#1E1E1E]' : 'bg-white text-neutral-700 border-abv-border hover:bg-neutral-100'"
+                    class="px-3 py-1.5 rounded-full text-xs font-semibold border transition flex items-center gap-1.5"
+                >
+                    <span>Todos</span>
+                    <span class="text-[10px] px-1.5 py-0.2 rounded-full" :class="categoryFilter === 'all' ? 'bg-neutral-700 text-neutral-200' : 'bg-neutral-200 text-neutral-700'" x-text="products.length"></span>
+                </button>
+                <button
+                    type="button"
+                    @click="categoryFilter = 'tableros'"
+                    :class="categoryFilter === 'tableros' ? 'bg-abv-blue text-white border-abv-blue' : 'bg-white text-neutral-700 border-abv-border hover:bg-neutral-100'"
+                    class="px-3 py-1.5 rounded-full text-xs font-semibold border transition flex items-center gap-1.5"
+                >
+                    <i class="fas fa-server text-[10px]"></i>
+                    <span>Tableros</span>
+                    <span class="text-[10px] px-1.5 py-0.2 rounded-full" :class="categoryFilter === 'tableros' ? 'bg-blue-800 text-white' : 'bg-neutral-200 text-neutral-700'" x-text="countCategory('tableros')"></span>
+                </button>
+                <button
+                    type="button"
+                    @click="categoryFilter = 'interruptores'"
+                    :class="categoryFilter === 'interruptores' ? 'bg-abv-blue text-white border-abv-blue' : 'bg-white text-neutral-700 border-abv-border hover:bg-neutral-100'"
+                    class="px-3 py-1.5 rounded-full text-xs font-semibold border transition flex items-center gap-1.5"
+                >
+                    <i class="fas fa-toggle-on text-[10px]"></i>
+                    <span>Interruptores</span>
+                    <span class="text-[10px] px-1.5 py-0.2 rounded-full" :class="categoryFilter === 'interruptores' ? 'bg-blue-800 text-white' : 'bg-neutral-200 text-neutral-700'" x-text="countCategory('interruptores')"></span>
+                </button>
+                <button
+                    type="button"
+                    @click="categoryFilter = 'accesorios'"
+                    :class="categoryFilter === 'accesorios' ? 'bg-abv-blue text-white border-abv-blue' : 'bg-white text-neutral-700 border-abv-border hover:bg-neutral-100'"
+                    class="px-3 py-1.5 rounded-full text-xs font-semibold border transition flex items-center gap-1.5"
+                >
+                    <i class="fas fa-puzzle-piece text-[10px]"></i>
+                    <span>Accesorios & Zapatas</span>
+                    <span class="text-[10px] px-1.5 py-0.2 rounded-full" :class="categoryFilter === 'accesorios' ? 'bg-blue-800 text-white' : 'bg-neutral-200 text-neutral-700'" x-text="countCategory('accesorios')"></span>
+                </button>
+            </div>
+
+            <!-- Selector desplegable alternativo (con renderizado del servidor) -->
+            <div class="w-full sm:w-auto min-w-[260px]">
+                <select
+                    x-model="selectedProductId"
+                    @change="selectProductById(selectedProductId)"
+                    class="w-full px-3 py-1.5 text-xs font-medium border border-abv-border rounded-lg bg-white text-neutral-800 focus:outline-none focus:ring-2 focus:ring-abv-blue"
+                >
+                    <option value="">-- Seleccionar desde lista completa --</option>
+                    {% for p in products %}
+                    <option value="{{ p.id }}">{{ p.nombre_corto }} &bull; {{ p.nombre_largo }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+
+        <!-- Chips de selección rápida inicial y reactiva -->
+        <div class="pt-2 flex flex-wrap gap-2">
+            <template x-for="p in filteredProducts.slice(0, 8)" :key="p.id">
+                <button
+                    type="button"
+                    @click="selectProductById(p.id)"
+                    :class="selectedProductId == p.id ? 'bg-abv-blue text-white border-abv-blue shadow-sm' : 'bg-neutral-50 hover:bg-neutral-100 text-neutral-800 border-neutral-300'"
+                    class="px-2.5 py-1 text-xs font-mono rounded border transition flex items-center gap-1.5"
+                >
+                    <strong x-text="p.nombre_corto"></strong>
+                    <span class="font-sans text-[11px] opacity-80 truncate max-w-[150px]" x-text="p.nombre_largo"></span>
+                </button>
+            </template>
         </div>
     </div>
 
-    <!-- Layout 2 Columnas: Explorador (65%) / Lista Temporal en Memoria (35%) -->
-    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+    <!-- Layout Principal: Explorador Técnico (8 cols) / Despiece y Lista de Materiales (4 cols) -->
+    <div class="no-print grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
 
-        <!-- Columna Principal: Selección y Compatibilidades (8 cols) -->
-        <div class="no-print lg:col-span-8 space-y-6">
+        <!-- Columna Izquierda: Ficha Técnica y Grafo de Compatibilidad (8 cols) -->
+        <div class="lg:col-span-8 space-y-6">
 
-            <!-- Selector de Producto Base -->
-            <div class="bg-white p-5 rounded-xl border border-abv-border shadow-sm space-y-3">
-                <label class="block text-xs font-bold uppercase tracking-wider text-neutral-700">
-                    <i class="fas fa-search mr-1.5 text-abv-blue"></i> Seleccionar Producto Base / Anfitrión
-                </label>
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <select
-                        x-model="selectedProductId"
-                        @change="loadProductTree()"
-                        class="w-full px-3 py-2 text-sm border border-abv-border rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-abv-blue font-semibold"
-                    >
-                        <option value="">-- Elige un producto base del catálogo --</option>
-                        {% for p in products %}
-                        <option value="{{ p.id }}">{{ p.nombre_corto }} &bull; {{ p.nombre_largo }}</option>
-                        {% endfor %}
-                    </select>
-
+            <!-- Estado Inicial: Ningún equipo seleccionado -->
+            <div x-show="!selectedProduct && !loading" class="bg-white p-8 rounded-xl border border-abv-border shadow-sm text-center space-y-4">
+                <div class="w-12 h-12 mx-auto rounded-full bg-blue-50 text-abv-blue flex items-center justify-center text-xl">
+                    <i class="fas fa-layer-group"></i>
+                </div>
+                <div class="max-w-md mx-auto">
+                    <h2 class="text-base font-bold text-abv-dark">Selecciona un equipo para comenzar</h2>
+                    <p class="text-xs text-neutral-500 mt-1">
+                        Elige un tablero de distribución, interruptor termomagnético o accesorio del catálogo superior para verificar su mapa de compatibilidad física y eléctrica.
+                    </p>
+                </div>
+                <div class="flex flex-wrap justify-center gap-2 pt-2">
                     <button
                         type="button"
-                        x-show="selectedProduct"
-                        @click="addToList(selectedProduct.id, selectedProduct.nombre_corto, selectedProduct.nombre_largo, 1, 'Equipo Base')"
-                        class="w-full py-2 px-3 bg-abv-dark hover:bg-abv-dark-hover text-white text-xs font-bold rounded-lg shadow transition flex items-center justify-center gap-2"
+                        @click="selectFirstOfType('NQ')"
+                        class="px-3 py-1.5 bg-neutral-100 hover:bg-neutral-200 text-abv-dark text-xs font-semibold rounded-lg border border-neutral-300 transition"
                     >
-                        <i class="fas fa-plus text-abv-blue"></i> Agregar Equipo Base a Lista
+                        <i class="fas fa-server mr-1 text-abv-blue"></i> Explorar Tablero NQ
+                    </button>
+                    <button
+                        type="button"
+                        @click="selectFirstOfType('QO-120')"
+                        class="px-3 py-1.5 bg-neutral-100 hover:bg-neutral-200 text-abv-dark text-xs font-semibold rounded-lg border border-neutral-300 transition"
+                    >
+                        <i class="fas fa-toggle-on mr-1 text-abv-blue"></i> Explorar Interruptor QO
+                    </button>
+                    <button
+                        type="button"
+                        @click="selectFirstOfType('AUX-QO')"
+                        class="px-3 py-1.5 bg-neutral-100 hover:bg-neutral-200 text-abv-dark text-xs font-semibold rounded-lg border border-neutral-300 transition"
+                    >
+                        <i class="fas fa-puzzle-piece mr-1 text-abv-blue"></i> Explorar Accesorio Auxiliar
                     </button>
                 </div>
             </div>
 
-            <!-- Ficha del Producto Seleccionado -->
-            <div x-show="selectedProduct" class="bg-white p-5 rounded-xl border border-abv-border shadow-sm space-y-2">
-                <div class="flex items-start justify-between">
-                    <div>
-                        <span class="font-mono text-xs font-bold text-abv-blue bg-blue-50 px-2 py-0.5 rounded border border-blue-200" x-text="`ID: ${selectedProduct?.id} | ${selectedProduct?.nombre_corto}`"></span>
-                        <h2 class="text-lg font-bold text-abv-dark mt-1" x-text="selectedProduct?.nombre_largo"></h2>
-                    </div>
-                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-800">
-                        Activo
-                    </span>
-                </div>
-                <p class="text-xs text-neutral-600" x-text="selectedProduct?.descripcion || 'Sin descripción técnica adicional.'"></p>
+            <!-- Estado Cargando -->
+            <div x-show="loading" class="bg-white p-12 rounded-xl border border-abv-border shadow-sm text-center">
+                <i class="fas fa-circle-notch fa-spin text-2xl text-abv-blue"></i>
+                <p class="text-xs font-medium text-neutral-500 mt-2">Consultando compatibilidades técnicas...</p>
             </div>
 
-            <!-- Sección de Compatibilidades y Accesorios -->
-            <div x-show="selectedProduct" class="space-y-6">
+            <!-- Ficha del Producto Activo y sus Compatibilidades -->
+            <div x-show="selectedProduct && !loading" class="space-y-6">
 
-                <!-- 1. Componentes Compatibles (COMPATIBLE_WITH) -->
-                <div class="bg-white p-5 rounded-xl border border-abv-border shadow-sm space-y-4">
-                    <div class="flex items-center justify-between pb-2 border-b border-neutral-200">
-                        <h3 class="text-sm font-bold uppercase tracking-wider text-abv-dark flex items-center">
-                            <i class="fas fa-check-circle text-abv-green mr-2"></i> Componentes Compatibles (Montaje Directo)
-                        </h3>
-                        <span class="text-xs font-mono font-bold text-neutral-500" x-text="`${compatibleComponents.length} opción(es)`"></span>
+                <!-- Ficha Principal del Producto Seleccionado -->
+                <div class="bg-white p-6 rounded-xl border border-abv-border shadow-sm space-y-4">
+                    <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-3 pb-3 border-b border-neutral-200">
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <span class="font-mono text-sm font-extrabold text-white bg-[#1E1E1E] px-2.5 py-0.5 rounded tracking-wide" x-text="selectedProduct?.nombre_corto"></span>
+                                <span class="text-xs px-2.5 py-0.5 rounded-full font-semibold bg-green-50 text-green-700 border border-green-200 flex items-center gap-1">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-green-600"></span> Homologado en Catálogo
+                                </span>
+                            </div>
+                            <h2 class="text-lg sm:text-xl font-bold text-abv-dark mt-2" x-text="selectedProduct?.nombre_largo"></h2>
+                        </div>
+                        <div class="shrink-0">
+                            <button
+                                type="button"
+                                @click="addToList(selectedProduct.id, selectedProduct.nombre_corto, selectedProduct.nombre_largo, 1, 'Equipo Seleccionado')"
+                                class="w-full sm:w-auto px-4 py-2 bg-abv-blue hover:bg-abv-blue-hover text-white text-xs font-bold rounded-lg shadow-sm transition flex items-center justify-center gap-2"
+                            >
+                                <i class="fas fa-plus"></i> Agregar a Lista de Materiales
+                            </button>
+                        </div>
                     </div>
 
-                    <div x-show="compatibleComponents.length === 0" class="py-4 text-center text-xs text-neutral-400">
-                        No hay componentes derivados registrados para este equipo.
+                    <div class="text-xs text-neutral-700 leading-relaxed bg-neutral-50 p-3 rounded-lg border border-neutral-200">
+                        <span class="font-semibold text-neutral-900 block mb-0.5">Descripción Técnica:</span>
+                        <span x-text="selectedProduct?.descripcion || 'Especificación técnica estándar del fabricante.'"></span>
+                    </div>
+                </div>
+
+                <!-- 1. TABLEROS Y EQUIPOS DONDE SE PUEDE INSTALAR (COMPATIBILIDAD ANFITRIÓN - INWARD) -->
+                <!-- Crucial: Se muestra cuando se selecciona un interruptor o accesorio para ver qué tableros lo aceptan -->
+                <div x-show="hostEquipment.length > 0" class="bg-white p-6 rounded-xl border border-blue-200 shadow-sm space-y-4">
+                    <div class="flex items-center justify-between pb-3 border-b border-neutral-200">
+                        <div>
+                            <h3 class="text-sm font-bold text-abv-dark flex items-center gap-2">
+                                <i class="fas fa-server text-abv-blue"></i>
+                                <span>Tableros y Equipos donde se instala (Equipo Anfitrión)</span>
+                            </h3>
+                            <p class="text-xs text-neutral-500 mt-0.5">
+                                Este componente está homologado para montarse directamente en los siguientes tableros de distribución:
+                            </p>
+                        </div>
+                        <span class="font-mono text-xs font-bold text-abv-blue bg-blue-50 px-2.5 py-1 rounded-full border border-blue-200" x-text="`${hostEquipment.length} tablero(s)`"></span>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <template x-for="host in hostEquipment" :key="host.id">
+                            <div class="p-3.5 bg-blue-50/40 rounded-lg border border-blue-200 flex flex-col justify-between space-y-3 hover:border-abv-blue transition">
+                                <div>
+                                    <div class="flex items-center justify-between">
+                                        <span class="font-mono text-xs font-bold text-[#1E1E1E]" x-text="host.nombre_corto"></span>
+                                        <span class="text-[10px] uppercase font-semibold text-blue-700 bg-blue-100/70 px-2 py-0.5 rounded">Tablero Anfitrión</span>
+                                    </div>
+                                    <div class="text-xs font-bold text-neutral-900 mt-1" x-text="host.nombre_largo"></div>
+                                    <p class="text-[11px] text-neutral-600 mt-1" x-text="host.notes || host.descripcion"></p>
+                                </div>
+                                <div class="grid grid-cols-2 gap-2 pt-2 border-t border-blue-100">
+                                    <button
+                                        type="button"
+                                        @click="selectProductById(host.id)"
+                                        class="py-1.5 px-2 bg-white hover:bg-neutral-100 text-neutral-800 text-xs font-semibold rounded border border-neutral-300 transition flex items-center justify-center gap-1"
+                                    >
+                                        <i class="fas fa-arrow-right text-[10px] text-abv-blue"></i> Ver Tablero
+                                    </button>
+                                    <button
+                                        type="button"
+                                        @click="addToList(host.id, host.nombre_corto, host.nombre_largo, 1, 'Tablero Anfitrión')"
+                                        class="py-1.5 px-2 bg-abv-dark hover:bg-abv-dark-hover text-white text-xs font-bold rounded transition flex items-center justify-center gap-1"
+                                    >
+                                        <i class="fas fa-plus text-[10px] text-abv-green"></i> Agregar
+                                    </button>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+
+                <!-- 2. EQUIPOS QUE UTILIZAN ESTE ACCESORIO (USED_IN_EQUIPMENT - INWARD) -->
+                <!-- Crucial: Se muestra cuando se selecciona un accesorio (como AUX-QO o KIT-ZAP) para ver qué interruptor o tablero lo usa -->
+                <div x-show="usedInEquipment.length > 0" class="bg-white p-6 rounded-xl border border-neutral-200 shadow-sm space-y-4">
+                    <div class="flex items-center justify-between pb-3 border-b border-neutral-200">
+                        <div>
+                            <h3 class="text-sm font-bold text-abv-dark flex items-center gap-2">
+                                <i class="fas fa-link text-abv-blue"></i>
+                                <span>Equipos e Interruptores compatibles con este Accesorio</span>
+                            </h3>
+                            <p class="text-xs text-neutral-500 mt-0.5">
+                                Este accesorio está diseñado y homologado para acoplarse con los siguientes componentes principales:
+                            </p>
+                        </div>
+                        <span class="font-mono text-xs font-bold text-neutral-600 bg-neutral-100 px-2.5 py-1 rounded-full border border-neutral-300" x-text="`${usedInEquipment.length} equipo(s)`"></span>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <template x-for="item in usedInEquipment" :key="item.id">
+                            <div class="p-3.5 bg-neutral-50 rounded-lg border border-neutral-200 flex flex-col justify-between space-y-3 hover:border-abv-blue transition">
+                                <div>
+                                    <span class="font-mono text-xs font-bold text-[#1E1E1E]" x-text="item.nombre_corto"></span>
+                                    <div class="text-xs font-bold text-neutral-900 mt-1" x-text="item.nombre_largo"></div>
+                                    <p class="text-[11px] text-neutral-600 mt-1" x-text="item.notes || item.descripcion"></p>
+                                </div>
+                                <div class="grid grid-cols-2 gap-2 pt-2 border-t border-neutral-200">
+                                    <button
+                                        type="button"
+                                        @click="selectProductById(item.id)"
+                                        class="py-1.5 px-2 bg-white hover:bg-neutral-100 text-neutral-800 text-xs font-semibold rounded border border-neutral-300 transition flex items-center justify-center gap-1"
+                                    >
+                                        <i class="fas fa-arrow-right text-[10px] text-abv-blue"></i> Ver Equipo
+                                    </button>
+                                    <button
+                                        type="button"
+                                        @click="addToList(item.id, item.nombre_corto, item.nombre_largo, 1, 'Equipo Principal')"
+                                        class="py-1.5 px-2 bg-abv-dark hover:bg-abv-dark-hover text-white text-xs font-bold rounded transition flex items-center justify-center gap-1"
+                                    >
+                                        <i class="fas fa-plus text-[10px] text-abv-green"></i> Agregar
+                                    </button>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+
+                <!-- 3. COMPONENTES COMPATIBLES (MONTAJE DIRECTO - OUTWARD) -->
+                <!-- Se muestra cuando un tablero aloja interruptores -->
+                <div x-show="compatibleComponents.length > 0" class="bg-white p-6 rounded-xl border border-neutral-200 shadow-sm space-y-4">
+                    <div class="flex items-center justify-between pb-3 border-b border-neutral-200">
+                        <div>
+                            <h3 class="text-sm font-bold text-abv-dark flex items-center gap-2">
+                                <i class="fas fa-check-circle text-abv-green"></i>
+                                <span>Interruptores y Derivados Compatibles (Montaje Directo)</span>
+                            </h3>
+                            <p class="text-xs text-neutral-500 mt-0.5">
+                                Dispositivos homologados para conectarse directamente a las barras o chasis de este equipo:
+                            </p>
+                        </div>
+                        <span class="font-mono text-xs font-bold text-green-700 bg-green-50 px-2.5 py-1 rounded-full border border-green-200" x-text="`${compatibleComponents.length} opción(es)`"></span>
                     </div>
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                         <template x-for="comp in compatibleComponents" :key="comp.id">
-                            <div class="p-3 bg-neutral-50 rounded-lg border border-neutral-200 flex flex-col justify-between space-y-2 hover:border-abv-blue transition">
+                            <div class="p-3.5 bg-neutral-50 rounded-lg border border-neutral-200 flex flex-col justify-between space-y-3 hover:border-abv-blue transition">
                                 <div>
                                     <div class="flex items-center justify-between">
-                                        <span class="font-mono text-xs font-bold text-abv-dark" x-text="comp.nombre_corto"></span>
-                                        <span class="text-[10px] font-mono text-neutral-400" x-text="`ID: ${comp.id}`"></span>
+                                        <span class="font-mono text-xs font-bold text-[#1E1E1E]" x-text="comp.nombre_corto"></span>
+                                        <span class="text-[10px] font-semibold text-green-800 bg-green-100 px-2 py-0.5 rounded">Compatible</span>
                                     </div>
-                                    <div class="text-xs font-medium text-neutral-800 mt-1" x-text="comp.nombre_largo"></div>
-                                    <p class="text-[11px] text-neutral-500 mt-0.5 line-clamp-2" x-text="comp.descripcion"></p>
+                                    <div class="text-xs font-bold text-neutral-900 mt-1" x-text="comp.nombre_largo"></div>
+                                    <p class="text-[11px] text-neutral-600 mt-1" x-text="comp.notes || comp.descripcion"></p>
                                 </div>
-                                <button
-                                    type="button"
-                                    @click="addToList(comp.id, comp.nombre_corto, comp.nombre_largo, 1, 'Componente Compatible')"
-                                    class="w-full py-1.5 px-3 bg-white hover:bg-abv-blue hover:text-white text-abv-blue text-xs font-bold rounded border border-abv-blue transition flex items-center justify-center gap-1.5"
-                                >
-                                    <i class="fas fa-plus"></i> Agregar
-                                </button>
+                                <div class="grid grid-cols-2 gap-2 pt-2 border-t border-neutral-200">
+                                    <button
+                                        type="button"
+                                        @click="selectProductById(comp.id)"
+                                        class="py-1.5 px-2 bg-white hover:bg-neutral-100 text-neutral-800 text-xs font-semibold rounded border border-neutral-300 transition flex items-center justify-center gap-1"
+                                    >
+                                        <i class="fas fa-sliders text-[10px] text-abv-blue"></i> Explorar
+                                    </button>
+                                    <button
+                                        type="button"
+                                        @click="addToList(comp.id, comp.nombre_corto, comp.nombre_largo, 1, 'Componente Derivado')"
+                                        class="py-1.5 px-2 bg-abv-blue hover:bg-abv-blue-hover text-white text-xs font-bold rounded transition flex items-center justify-center gap-1"
+                                    >
+                                        <i class="fas fa-plus text-[10px]"></i> Agregar
+                                    </button>
+                                </div>
                             </div>
                         </template>
                     </div>
                 </div>
 
-                <!-- 2. Accesorios Obligatorios (REQUIRES) -->
-                <div x-show="requiredAccessories.length > 0" class="bg-red-50 p-5 rounded-xl border border-red-200 shadow-sm space-y-3">
-                    <div class="flex items-center justify-between pb-2 border-b border-red-200">
-                        <h3 class="text-sm font-bold uppercase tracking-wider text-red-900 flex items-center">
-                            <i class="fas fa-triangle-exclamation text-red-600 mr-2"></i> Accesorios Mandatorios Requeridos (REQUIRES)
-                        </h3>
-                        <span class="text-xs font-mono font-bold text-red-700" x-text="`${requiredAccessories.length} obligatorio(s)`"></span>
+                <!-- 4. ACCESORIOS OBLIGATORIOS (REQUIRES) -->
+                <div x-show="requiredAccessories.length > 0" class="bg-red-50/70 p-6 rounded-xl border border-red-300 shadow-sm space-y-4">
+                    <div class="flex items-center justify-between pb-3 border-b border-red-200">
+                        <div>
+                            <h3 class="text-sm font-bold text-red-900 flex items-center gap-2">
+                                <i class="fas fa-triangle-exclamation text-red-600"></i>
+                                <span>Accesorios Obligatorios de Instalación</span>
+                            </h3>
+                            <p class="text-xs text-red-700 mt-0.5">
+                                Componentes mandatorios requeridos por normativa o diseño para la operación segura de este equipo:
+                            </p>
+                        </div>
+                        <span class="font-mono text-xs font-bold text-red-800 bg-red-100 px-2.5 py-1 rounded-full border border-red-300" x-text="`${requiredAccessories.length} obligatorio(s)`"></span>
                     </div>
 
                     <div class="space-y-2">
                         <template x-for="req in requiredAccessories" :key="req.id">
-                            <div class="p-3 bg-white rounded-lg border border-red-200 flex items-center justify-between">
+                            <div class="p-3 bg-white rounded-lg border border-red-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                                 <div>
-                                    <span class="font-mono text-xs font-bold text-red-800" x-text="req.nombre_corto"></span>
-                                    <div class="text-xs font-semibold text-neutral-800" x-text="req.nombre_largo"></div>
+                                    <span class="font-mono text-xs font-bold text-red-900" x-text="req.nombre_corto"></span>
+                                    <div class="text-xs font-bold text-neutral-900" x-text="req.nombre_largo"></div>
+                                    <p class="text-[11px] text-neutral-600 mt-0.5" x-text="req.notes || req.descripcion"></p>
                                 </div>
-                                <button
-                                    type="button"
-                                    @click="addToList(req.id, req.nombre_corto, req.nombre_largo, 1, 'Accesorio Obligatorio')"
-                                    class="py-1 px-3 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded shadow-sm transition"
-                                >
-                                    <i class="fas fa-plus mr-1"></i> Incluir Requerido
-                                </button>
+                                <div class="flex items-center gap-2 shrink-0">
+                                    <button
+                                        type="button"
+                                        @click="selectProductById(req.id)"
+                                        class="py-1.5 px-3 bg-neutral-100 hover:bg-neutral-200 text-neutral-800 text-xs font-semibold rounded border border-neutral-300 transition"
+                                    >
+                                        Detalle
+                                    </button>
+                                    <button
+                                        type="button"
+                                        @click="addToList(req.id, req.nombre_corto, req.nombre_largo, 1, 'Accesorio Obligatorio')"
+                                        class="py-1.5 px-3 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded shadow-sm transition flex items-center gap-1.5"
+                                    >
+                                        <i class="fas fa-plus"></i> Incluir Requerido
+                                    </button>
+                                </div>
                             </div>
                         </template>
                     </div>
                 </div>
 
-                <!-- 3. Complementos Sugeridos (COMPLEMENT_OF) -->
-                <div x-show="complements.length > 0" class="bg-blue-50/60 p-5 rounded-xl border border-blue-200 shadow-sm space-y-3">
-                    <div class="flex items-center justify-between pb-2 border-b border-blue-200">
-                        <h3 class="text-sm font-bold uppercase tracking-wider text-blue-900 flex items-center">
-                            <i class="fas fa-lightbulb text-yellow-500 mr-2"></i> Accesorios Complementarios Recomendados (Venta Cruzada)
-                        </h3>
-                        <span class="text-xs font-mono font-bold text-blue-700" x-text="`${complements.length} sugerencia(s)`"></span>
+                <!-- 5. ACCESORIOS Y COMPLEMENTOS RECOMENDADOS (COMPLEMENT_OF) -->
+                <div x-show="complements.length > 0" class="bg-white p-6 rounded-xl border border-neutral-200 shadow-sm space-y-4">
+                    <div class="flex items-center justify-between pb-3 border-b border-neutral-200">
+                        <div>
+                            <h3 class="text-sm font-bold text-abv-dark flex items-center gap-2">
+                                <i class="fas fa-lightbulb text-yellow-500"></i>
+                                <span>Accesorios y Herrajes Complementarios Sugeridos</span>
+                            </h3>
+                            <p class="text-xs text-neutral-500 mt-0.5">
+                                Zapatas de neutro, contactos auxiliares y complementos recomendados para completar la instalación:
+                            </p>
+                        </div>
+                        <span class="font-mono text-xs font-bold text-neutral-700 bg-neutral-100 px-2.5 py-1 rounded-full border border-neutral-300" x-text="`${complements.length} sugerencia(s)`"></span>
                     </div>
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                         <template x-for="sug in complements" :key="sug.id">
-                            <div class="p-3 bg-white rounded-lg border border-blue-100 flex flex-col justify-between space-y-2">
+                            <div class="p-3.5 bg-neutral-50 rounded-lg border border-neutral-200 flex flex-col justify-between space-y-3 hover:border-abv-blue transition">
                                 <div>
-                                    <span class="font-mono text-xs font-bold text-abv-blue" x-text="sug.nombre_corto"></span>
-                                    <div class="text-xs font-medium text-neutral-800" x-text="sug.nombre_largo"></div>
+                                    <span class="font-mono text-xs font-bold text-[#1E1E1E]" x-text="sug.nombre_corto"></span>
+                                    <div class="text-xs font-bold text-neutral-900 mt-1" x-text="sug.nombre_largo"></div>
+                                    <p class="text-[11px] text-neutral-600 mt-1" x-text="sug.notes || sug.descripcion"></p>
                                 </div>
-                                <button
-                                    type="button"
-                                    @click="addToList(sug.id, sug.nombre_corto, sug.nombre_largo, 1, 'Accesorio Complementario')"
-                                    class="w-full py-1 px-2.5 bg-neutral-100 hover:bg-neutral-200 text-neutral-800 text-xs font-semibold rounded border border-neutral-300 transition"
-                                >
-                                    <i class="fas fa-plus mr-1 text-abv-blue"></i> Agregar Complemento
-                                </button>
+                                <div class="grid grid-cols-2 gap-2 pt-2 border-t border-neutral-200">
+                                    <button
+                                        type="button"
+                                        @click="selectProductById(sug.id)"
+                                        class="py-1.5 px-2 bg-white hover:bg-neutral-100 text-neutral-800 text-xs font-semibold rounded border border-neutral-300 transition flex items-center justify-center gap-1"
+                                    >
+                                        <i class="fas fa-arrow-right text-[10px] text-abv-blue"></i> Ver
+                                    </button>
+                                    <button
+                                        type="button"
+                                        @click="addToList(sug.id, sug.nombre_corto, sug.nombre_largo, 1, 'Accesorio Sugerido')"
+                                        class="py-1.5 px-2 bg-neutral-800 hover:bg-neutral-900 text-white text-xs font-bold rounded transition flex items-center justify-center gap-1"
+                                    >
+                                        <i class="fas fa-plus text-[10px] text-yellow-400"></i> Agregar
+                                    </button>
+                                </div>
                             </div>
                         </template>
                     </div>
                 </div>
 
-                <!-- 4. Alternativas de Sustitución (ALTERNATIVE_TO) -->
-                <div x-show="alternatives.length > 0" class="bg-amber-50/60 p-5 rounded-xl border border-amber-200 shadow-sm space-y-3">
-                    <div class="flex items-center justify-between pb-2 border-b border-amber-200">
-                        <h3 class="text-sm font-bold uppercase tracking-wider text-amber-900 flex items-center">
-                            <i class="fas fa-arrows-split-up-and-left text-amber-600 mr-2"></i> Alternativas y Sustitutos Directos
-                        </h3>
-                        <span class="text-xs font-mono font-bold text-amber-700" x-text="`${alternatives.length} alternativa(s)`"></span>
+                <!-- 6. ALTERNATIVAS Y REEMPLAZOS DIRECTOS (ALTERNATIVE_TO) -->
+                <div x-show="alternatives.length > 0 || alternativeFor.length > 0" class="bg-amber-50/50 p-6 rounded-xl border border-amber-300 shadow-sm space-y-4">
+                    <div class="flex items-center justify-between pb-3 border-b border-amber-200">
+                        <div>
+                            <h3 class="text-sm font-bold text-amber-900 flex items-center gap-2">
+                                <i class="fas fa-arrows-split-up-and-left text-amber-600"></i>
+                                <span>Alternativas y Sustitutos Equivalentes</span>
+                            </h3>
+                            <p class="text-xs text-amber-700 mt-0.5">
+                                Modelos con características técnicas equivalentes para variantes de montaje o suministro:
+                            </p>
+                        </div>
                     </div>
 
                     <div class="space-y-2">
+                        <!-- Alternativas directas (este producto tiene alternativa X) -->
                         <template x-for="alt in alternatives" :key="alt.id">
-                            <div class="p-3 bg-white rounded-lg border border-amber-200 flex items-center justify-between">
+                            <div class="p-3 bg-white rounded-lg border border-amber-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                                 <div>
-                                    <span class="font-mono text-xs font-bold text-amber-800" x-text="alt.nombre_corto"></span>
-                                    <div class="text-xs font-medium text-neutral-800" x-text="alt.nombre_largo"></div>
+                                    <div class="flex items-center gap-2">
+                                        <span class="font-mono text-xs font-bold text-amber-900" x-text="alt.nombre_corto"></span>
+                                        <span class="text-[10px] font-semibold text-amber-800 bg-amber-100 px-2 py-0.5 rounded">Sustituto Directo</span>
+                                    </div>
+                                    <div class="text-xs font-bold text-neutral-900 mt-0.5" x-text="alt.nombre_largo"></div>
+                                    <p class="text-[11px] text-neutral-600 mt-0.5" x-text="alt.notes || alt.descripcion"></p>
                                 </div>
-                                <button
-                                    type="button"
-                                    @click="addToList(alt.id, alt.nombre_corto, alt.nombre_largo, 1, 'Alternativa Directa')"
-                                    class="py-1 px-3 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded shadow-sm transition"
-                                >
-                                    <i class="fas fa-plus mr-1"></i> Seleccionar Alternativa
-                                </button>
+                                <div class="flex items-center gap-2 shrink-0">
+                                    <button
+                                        type="button"
+                                        @click="selectProductById(alt.id)"
+                                        class="py-1.5 px-3 bg-neutral-100 hover:bg-neutral-200 text-neutral-800 text-xs font-semibold rounded border border-neutral-300 transition"
+                                    >
+                                        Explorar
+                                    </button>
+                                    <button
+                                        type="button"
+                                        @click="addToList(alt.id, alt.nombre_corto, alt.nombre_largo, 1, 'Sustituto Equivalente')"
+                                        class="py-1.5 px-3 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded shadow-sm transition flex items-center gap-1.5"
+                                    >
+                                        <i class="fas fa-plus"></i> Usar Alternativa
+                                    </button>
+                                </div>
+                            </div>
+                        </template>
+
+                        <!-- Este producto es alternativa de otro equipo -->
+                        <template x-for="orig in alternativeFor" :key="orig.id">
+                            <div class="p-3 bg-white rounded-lg border border-amber-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                <div>
+                                    <div class="flex items-center gap-2">
+                                        <span class="font-mono text-xs font-bold text-amber-900" x-text="orig.nombre_corto"></span>
+                                        <span class="text-[10px] font-semibold text-neutral-700 bg-neutral-100 px-2 py-0.5 rounded">Equipo al que sustituye</span>
+                                    </div>
+                                    <div class="text-xs font-bold text-neutral-900 mt-0.5" x-text="orig.nombre_largo"></div>
+                                    <p class="text-[11px] text-neutral-600 mt-0.5" x-text="orig.notes || orig.descripcion"></p>
+                                </div>
+                                <div class="flex items-center gap-2 shrink-0">
+                                    <button
+                                        type="button"
+                                        @click="selectProductById(orig.id)"
+                                        class="py-1.5 px-3 bg-neutral-100 hover:bg-neutral-200 text-neutral-800 text-xs font-semibold rounded border border-neutral-300 transition"
+                                    >
+                                        Ver Original
+                                    </button>
+                                </div>
                             </div>
                         </template>
                     </div>
+                </div>
+
+                <!-- Mensaje cuando no hay compatibilidades registradas -->
+                <div
+                    x-show="hostEquipment.length === 0 && usedInEquipment.length === 0 && compatibleComponents.length === 0 && requiredAccessories.length === 0 && complements.length === 0 && alternatives.length === 0 && alternativeFor.length === 0"
+                    class="bg-white p-6 rounded-xl border border-abv-border shadow-sm text-center text-xs text-neutral-500"
+                >
+                    <i class="fas fa-info-circle text-base text-neutral-400 mb-1"></i>
+                    <p class="font-semibold text-neutral-700">Este equipo opera de manera independiente.</p>
+                    <p class="mt-0.5">No tiene registrados tableros anfitriones ni componentes derivados adicionales en esta versión del catálogo.</p>
                 </div>
 
             </div>
         </div>
 
-        <!-- Columna Lateral: Lista de Materiales (BOM) en Memoria (4 cols / Toda la pantalla al imprimir) -->
-        <div class="lg:col-span-4 print-area space-y-4">
-            <div class="bg-white p-5 rounded-xl border border-abv-border shadow-sm space-y-4">
+        <!-- Columna Derecha: Despiece y Lista de Materiales (BOM) (4 cols) -->
+        <div class="lg:col-span-4 space-y-4">
+            <div class="bg-white p-5 rounded-xl border border-abv-border shadow-sm space-y-4 sticky top-20">
                 
                 <div class="flex items-center justify-between pb-3 border-b border-neutral-200">
                     <div>
-                        <h2 class="text-base font-bold text-abv-dark flex items-center">
-                            <i class="fas fa-clipboard-list mr-2 text-abv-blue"></i> Lista de Materiales (BOM)
+                        <h2 class="text-sm font-bold text-abv-dark flex items-center gap-2">
+                            <i class="fas fa-clipboard-list text-abv-blue"></i>
+                            <span>Despiece de Materiales (BOM)</span>
                         </h2>
-                        <span class="text-[11px] text-neutral-500">Sesión en vivo &bull; No se guarda en BD</span>
+                        <span class="text-[11px] text-neutral-500">Lista de trabajo para mostrador o taller</span>
                     </div>
-                    <span class="font-mono text-xs font-extrabold text-abv-blue bg-blue-50 px-2 py-1 rounded border border-blue-200" x-text="`${totalItemsCount} pza(s)`"></span>
+                    <span
+                        class="font-mono text-xs font-bold px-2.5 py-1 rounded-full border"
+                        :class="materialList.length > 0 ? 'bg-blue-50 text-abv-blue border-blue-200' : 'bg-neutral-100 text-neutral-400 border-neutral-200'"
+                        x-text="`${totalItemsCount} pza(s)`"
+                    ></span>
                 </div>
 
                 <!-- Estado Vacío -->
-                <div x-show="materialList.length === 0" class="py-8 text-center text-xs text-neutral-400 border-2 border-dashed border-neutral-200 rounded-lg">
-                    <i class="fas fa-cart-flatbed text-3xl mb-2 text-neutral-300"></i>
-                    <p class="font-semibold text-neutral-600">Tu lista está vacía.</p>
-                    <p class="mt-1">Selecciona un producto base y agrega los componentes compatibles requeridos.</p>
+                <div x-show="materialList.length === 0" class="py-8 text-center text-xs text-neutral-500 border-2 border-dashed border-neutral-200 rounded-lg px-4">
+                    <i class="fas fa-boxes-stacked text-2xl text-neutral-300 mb-2"></i>
+                    <p class="font-bold text-neutral-700">Tu lista está vacía</p>
+                    <p class="mt-1 leading-relaxed text-neutral-500">
+                        Selecciona un equipo y agrega los componentes, tableros o accesorios para armar tu lista de requerimientos técnicos.
+                    </p>
                 </div>
 
-                <!-- Lista de Partidas Agregadas -->
-                <div x-show="materialList.length > 0" class="space-y-2 max-h-80 overflow-y-auto pr-1">
+                <!-- Lista de Partidas -->
+                <div x-show="materialList.length > 0" class="space-y-2 max-h-[380px] overflow-y-auto pr-1">
                     <template x-for="(item, idx) in materialList" :key="idx">
-                        <div class="p-2.5 bg-neutral-50 rounded-lg border border-neutral-200 text-xs flex items-center justify-between">
-                            <div class="overflow-hidden pr-2">
-                                <span class="font-mono font-bold text-abv-dark" x-text="item.nombre_corto"></span>
-                                <div class="text-[11px] text-neutral-600 truncate" x-text="item.nombre_largo"></div>
-                                <span class="text-[10px] text-neutral-400 uppercase font-mono" x-text="item.tipo"></span>
+                        <div class="p-3 bg-neutral-50 rounded-lg border border-neutral-200 text-xs flex items-center justify-between gap-2">
+                            <div class="overflow-hidden">
+                                <span class="font-mono font-bold text-abv-dark text-xs" x-text="item.nombre_corto"></span>
+                                <div class="text-[11px] text-neutral-700 truncate font-medium" x-text="item.nombre_largo"></div>
+                                <span class="text-[10px] text-neutral-500" x-text="item.tipo"></span>
                             </div>
                             <div class="flex items-center gap-2 shrink-0">
-                                <div class="flex items-center border border-abv-border rounded bg-white overflow-hidden">
+                                <div class="flex items-center border border-neutral-300 rounded bg-white overflow-hidden shadow-sm">
                                     <button
                                         type="button"
                                         @click="decreaseQty(idx)"
-                                        class="px-2 py-0.5 text-neutral-600 hover:bg-neutral-100 font-bold"
+                                        class="px-2 py-0.5 text-neutral-600 hover:bg-neutral-100 font-bold transition"
+                                        title="Reducir"
                                     >-</button>
-                                    <span class="px-2 py-0.5 font-mono font-bold text-abv-dark text-xs" x-text="item.quantity"></span>
+                                    <span class="px-2 py-0.5 font-mono font-bold text-abv-dark text-xs min-w-[20px] text-center" x-text="item.quantity"></span>
                                     <button
                                         type="button"
                                         @click="increaseQty(idx)"
-                                        class="px-2 py-0.5 text-neutral-600 hover:bg-neutral-100 font-bold"
+                                        class="px-2 py-0.5 text-neutral-600 hover:bg-neutral-100 font-bold transition"
+                                        title="Incrementar"
                                     >+</button>
                                 </div>
                                 <button
                                     type="button"
                                     @click="removeItem(idx)"
-                                    class="text-neutral-400 hover:text-red-600 transition"
+                                    class="text-neutral-400 hover:text-red-600 transition p-1"
+                                    title="Eliminar partida"
                                 >
-                                    <i class="fas fa-trash-can"></i>
+                                    <i class="fas fa-trash-can text-xs"></i>
                                 </button>
                             </div>
                         </div>
                     </template>
                 </div>
 
-                <!-- Acciones de Lista -->
+                <!-- Resumen y Acciones Principales -->
                 <div x-show="materialList.length > 0" class="pt-3 border-t border-neutral-200 space-y-2">
+                    
+                    <!-- Botón para copiar texto formateado para WhatsApp / Correo -->
                     <button
                         type="button"
-                        onclick="window.print()"
-                        class="w-full py-2.5 bg-abv-green hover:bg-green-700 text-white text-xs font-bold rounded-lg shadow transition flex items-center justify-center gap-2"
+                        @click="copyListToClipboard()"
+                        class="w-full py-2.5 px-3 bg-[#1E1E1E] hover:bg-[#2C2C2C] text-white text-xs font-bold rounded-lg shadow-sm transition flex items-center justify-center gap-2"
                     >
-                        <i class="fas fa-print"></i> Imprimir Lista de Materiales (BOM)
+                        <i class="fas fa-copy text-abv-blue"></i>
+                        <span>Copiar Lista (WhatsApp / Texto)</span>
                     </button>
+
+                    <!-- Botón para imprimir despiece técnico membretado -->
                     <button
                         type="button"
-                        @click="materialList = []"
-                        class="w-full py-1.5 text-xs text-neutral-500 hover:text-red-600 transition"
+                        @click="printWorksheet()"
+                        class="w-full py-2 px-3 bg-white hover:bg-neutral-100 text-neutral-800 text-xs font-semibold rounded-lg border border-neutral-300 transition flex items-center justify-center gap-2"
                     >
-                        Limpiar Lista
+                        <i class="fas fa-print text-neutral-600"></i>
+                        <span>Imprimir Despiece Técnico</span>
+                    </button>
+
+                    <!-- Vaciar lista -->
+                    <button
+                        type="button"
+                        @click="clearList()"
+                        class="w-full py-1 text-center text-[11px] text-neutral-500 hover:text-red-600 transition"
+                    >
+                        Vaciar lista de materiales
                     </button>
                 </div>
 
@@ -292,6 +646,58 @@
         </div>
 
     </div>
+
+    <!-- Hoja de Impresión Membretada (visible únicamente en window.print) -->
+    <div class="print-sheet bg-white p-8 max-w-4xl mx-auto text-black">
+        <div class="border-b-2 border-black pb-4 mb-6 flex justify-between items-start">
+            <div>
+                <h1 class="text-xl font-bold uppercase tracking-wider text-black">ABV ELECTRIC SUPPLY</h1>
+                <p class="text-xs text-neutral-600">Soluciones en Distribución y Control Eléctrico &bull; Morelia, Michoacán</p>
+                <p class="text-xs text-neutral-600">Tel: (443) 314-5000 &bull; www.abvelectric.com</p>
+            </div>
+            <div class="text-right">
+                <h2 class="text-sm font-bold uppercase">Despiece de Materiales</h2>
+                <p class="text-xs text-neutral-600" x-text="`Fecha: ${new Date().toLocaleDateString('es-MX')}`"></p>
+                <p class="text-xs text-neutral-600" x-text="`Total Partidas: ${materialList.length} | Piezas: ${totalItemsCount}`"></p>
+            </div>
+        </div>
+
+        <table class="w-full text-xs border-collapse border border-neutral-400 mb-6">
+            <thead>
+                <tr class="bg-neutral-100 border-b border-neutral-400 text-left">
+                    <th class="p-2 border-r border-neutral-300 w-12 text-center">Partida</th>
+                    <th class="p-2 border-r border-neutral-300 w-28">Código</th>
+                    <th class="p-2 border-r border-neutral-300">Descripción Técnica</th>
+                    <th class="p-2 border-r border-neutral-300 w-32">Aplicación / Rol</th>
+                    <th class="p-2 w-16 text-center">Cant.</th>
+                </tr>
+            </thead>
+            <tbody>
+                <template x-for="(item, idx) in materialList" :key="idx">
+                    <tr class="border-b border-neutral-200">
+                        <td class="p-2 border-r border-neutral-200 text-center font-mono" x-text="idx + 1"></td>
+                        <td class="p-2 border-r border-neutral-200 font-mono font-bold" x-text="item.nombre_corto"></td>
+                        <td class="p-2 border-r border-neutral-200" x-text="item.nombre_largo"></td>
+                        <td class="p-2 border-r border-neutral-200 text-neutral-600" x-text="item.tipo"></td>
+                        <td class="p-2 text-center font-bold font-mono" x-text="item.quantity"></td>
+                    </tr>
+                </template>
+            </tbody>
+        </table>
+
+        <div class="grid grid-cols-2 gap-8 pt-8 border-t border-neutral-300 text-xs">
+            <div>
+                <p class="font-bold text-neutral-700">Notas de Armado / Obra:</p>
+                <div class="h-16 border border-dashed border-neutral-300 rounded mt-1"></div>
+            </div>
+            <div>
+                <p class="font-bold text-neutral-700">Revisión y Entrega en Mostrador:</p>
+                <div class="h-16 border-b border-neutral-400 mt-6"></div>
+                <p class="text-[10px] text-neutral-500 text-center mt-1">Firma / Sello de Almacén ABV</p>
+            </div>
+        </div>
+    </div>
+
 </div>
 {% endblock %}
 
@@ -299,46 +705,128 @@
 <script>
     function compatibilityExplorerApp() {
         return {
+            // Catálogo completo sembrado en el servidor
+            products: [
+                {% for p in products %}
+                {
+                    id: {{ p.id }},
+                    nombre_corto: "{{ p.nombre_corto|escapejs }}",
+                    nombre_largo: "{{ p.nombre_largo|escapejs }}",
+                    descripcion: "{{ p.descripcion|escapejs }}",
+                    categoria: "{% if 'Tablero' in p.nombre_largo or 'NQ' in p.nombre_corto %}tableros{% elif 'Interruptor' in p.nombre_largo or 'QO' in p.nombre_corto or 'EDB' in p.nombre_corto %}interruptores{% else %}accesorios{% endif %}"
+                }{% if not forloop.last %},{% endif %}
+                {% endfor %}
+            ],
+
+            // Estados de la interfaz
+            searchQuery: '',
+            categoryFilter: 'all',
             selectedProductId: '',
             selectedProduct: null,
+            loading: false,
+
+            // Relaciones de compatibilidad
+            hostEquipment: [],
+            usedInEquipment: [],
             compatibleComponents: [],
             requiredAccessories: [],
             complements: [],
             alternatives: [],
+            alternativeFor: [],
+
+            // Lista de Materiales (BOM) en memoria del navegador
             materialList: [],
 
-            async loadProductTree() {
-                if (!this.selectedProductId) {
-                    this.selectedProduct = null;
-                    this.compatibleComponents = [];
-                    this.requiredAccessories = [];
-                    this.complements = [];
-                    this.alternatives = [];
+            // Toast feedback
+            toast: {
+                visible: false,
+                message: '',
+                icon: ''
+            },
+
+            // Productos filtrados según búsqueda y categoría activa
+            get filteredProducts() {
+                let list = this.products;
+
+                if (this.categoryFilter !== 'all') {
+                    list = list.filter(p => p.categoria === this.categoryFilter);
+                }
+
+                if (this.searchQuery && this.searchQuery.trim() !== '') {
+                    const q = this.searchQuery.toLowerCase().trim();
+                    list = list.filter(p =>
+                        p.nombre_corto.toLowerCase().includes(q) ||
+                        p.nombre_largo.toLowerCase().includes(q) ||
+                        p.descripcion.toLowerCase().includes(q)
+                    );
+                }
+
+                return list;
+            },
+
+            countCategory(cat) {
+                return this.products.filter(p => p.categoria === cat).length;
+            },
+
+            selectFirstOfType(codePrefix) {
+                const found = this.products.find(p => p.nombre_corto.startsWith(codePrefix));
+                if (found) {
+                    this.selectProductById(found.id);
+                }
+            },
+
+            async selectProductById(id) {
+                if (!id) {
+                    this.clearSelection();
                     return;
                 }
 
+                this.selectedProductId = id;
+                this.loading = true;
+
                 try {
-                    const res = await fetch(`/api/v1/catalog/products/${this.selectedProductId}/tree/`);
+                    const res = await fetch(`/api/v1/catalog/products/${id}/tree/`);
                     if (res.ok) {
                         const data = await res.json();
                         this.selectedProduct = data.product;
+                        this.hostEquipment = data.host_equipment || [];
+                        this.usedInEquipment = data.used_in_equipment || [];
                         this.compatibleComponents = data.compatible_components || [];
                         this.requiredAccessories = data.required_accessories || [];
                         this.complements = data.complements || [];
                         this.alternatives = data.alternatives || [];
+                        this.alternativeFor = data.alternative_for || [];
+                    } else {
+                        this.showToast('No se pudieron obtener las compatibilidades del equipo.', 'fas fa-exclamation-circle text-red-500');
                     }
                 } catch (e) {
-                    console.error('Error al cargar compatibilidades:', e);
+                    console.error('Error al cargar árbol de compatibilidades:', e);
+                    this.showToast('Error de conexión al consultar el catálogo.', 'fas fa-wifi text-red-500');
+                } finally {
+                    this.loading = false;
                 }
             },
 
-            addToList(id, nombre_corto, nombre_largo, quantity = 1, tipo = 'Componente') {
+            clearSelection() {
+                this.selectedProductId = '';
+                this.selectedProduct = null;
+                this.hostEquipment = [];
+                this.usedInEquipment = [];
+                this.compatibleComponents = [];
+                this.requiredAccessories = [];
+                this.complements = [];
+                this.alternatives = [];
+                this.alternativeFor = [];
+            },
+
+            addToList(id, nombre_corto, nombre_largo, quantity = 1, tipo = 'Material') {
                 const existing = this.materialList.find(i => i.id === id);
                 if (existing) {
                     existing.quantity += quantity;
                 } else {
                     this.materialList.push({ id, nombre_corto, nombre_largo, quantity, tipo });
                 }
+                this.showToast(`Agregado: ${nombre_corto} (+${quantity})`, 'fas fa-check-circle text-abv-green');
             },
 
             increaseQty(idx) {
@@ -354,13 +842,68 @@
             },
 
             removeItem(idx) {
+                const removed = this.materialList[idx];
                 this.materialList.splice(idx, 1);
+                if (removed) {
+                    this.showToast(`Removido: ${removed.nombre_corto}`, 'fas fa-trash text-neutral-400');
+                }
+            },
+
+            clearList() {
+                if (confirm('¿Deseas vaciar todas las partidas de la lista de materiales?')) {
+                    this.materialList = [];
+                    this.showToast('Lista de materiales vaciada', 'fas fa-eraser text-neutral-400');
+                }
             },
 
             get totalItemsCount() {
                 return this.materialList.reduce((acc, it) => acc + it.quantity, 0);
+            },
+
+            async copyListToClipboard() {
+                if (this.materialList.length === 0) return;
+
+                const fecha = new Date().toLocaleDateString('es-MX');
+                let text = `*ABV ELECTRIC SUPPLY - LISTA DE MATERIALES*\n`;
+                text += `Fecha: ${fecha}\n`;
+                text += `Total de piezas: ${this.totalItemsCount}\n\n`;
+                text += `*Partidas solicitadas:*\n`;
+
+                this.materialList.forEach((it, i) => {
+                    text += `${i + 1}. [${it.nombre_corto}] ${it.nombre_largo} - Cant: ${it.quantity} (${it.tipo})\n`;
+                });
+
+                text += `\nGenerado con Asistente de Compatibilidad Técnica ABV`;
+
+                try {
+                    await navigator.clipboard.writeText(text);
+                    this.showToast('¡Lista copiada al portapapeles! Lista para pegar en WhatsApp.', 'fas fa-clipboard-check text-abv-green');
+                } catch (e) {
+                    console.error('Error al copiar al portapapeles:', e);
+                    // Fallback
+                    const ta = document.createElement('textarea');
+                    ta.value = text;
+                    document.body.appendChild(ta);
+                    ta.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(ta);
+                    this.showToast('¡Lista copiada al portapapeles!', 'fas fa-clipboard-check text-abv-green');
+                }
+            },
+
+            printWorksheet() {
+                window.print();
+            },
+
+            showToast(message, icon = 'fas fa-check-circle text-abv-green') {
+                this.toast.message = message;
+                this.toast.icon = icon;
+                this.toast.visible = true;
+                setTimeout(() => {
+                    this.toast.visible = false;
+                }, 3000);
             }
-        }
+        };
     }
 </script>
 {% endblock %}

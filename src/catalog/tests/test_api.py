@@ -83,3 +83,13 @@ class CatalogAPITest(TestCase):
         self.assertEqual(len(data["compatible_components"]), 1)
         comp = data["compatible_components"][0]
         self.assertEqual(comp["nombre_corto"], "QO-120")
+
+    def test_get_product_tree_bidirectional_api(self):
+        response = self.client.get(
+            f"/api/v1/catalog/products/{self.interruptor.id}/tree/"
+        )
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(data["product"]["nombre_corto"], "QO-120")
+        self.assertEqual(len(data["host_equipment"]), 1)
+        self.assertEqual(data["host_equipment"][0]["nombre_corto"], "NQ-225-30P")

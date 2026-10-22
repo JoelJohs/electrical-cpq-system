@@ -1,11 +1,12 @@
+{% load static %}
 <!DOCTYPE html>
-<html lang="es" class="h-full bg-[#E6E8E5]">
+<html lang="es" class="h-full bg-[#EAECE9]">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}ABV ELECTRIC SUPPLY - Consulta de Compatibilidades{% endblock %}</title>
+    <title>{% block title %}ABV ELECTRIC SUPPLY - Asistente de Compatibilidad Técnica{% endblock %}</title>
 
-    <!-- Tailwind CSS con paleta institucional -->
+    <!-- Tailwind CSS con paleta institucional ABV -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -13,16 +14,16 @@
                 extend: {
                     colors: {
                         'abv-dark': '#1E1E1E',
-                        'abv-dark-hover': '#333333',
+                        'abv-dark-hover': '#2C2C2C',
                         'abv-blue': '#007BFF',
                         'abv-blue-hover': '#0056B3',
                         'abv-green': '#28A745',
                         'abv-yellow': '#FFC107',
                         'abv-red': '#DC3545',
-                        'abv-bg': '#E6E8E5',
                         'abv-surface': '#FFFFFF',
-                        'abv-surface-alt': '#F0F4F8',
-                        'abv-border': '#C8D0D8',
+                        'abv-surface-subtle': '#F8FAFC',
+                        'abv-border': '#D1D5DB',
+                        'abv-border-subtle': '#E5E7EB',
                     },
                     fontFamily: {
                         sans: ['system-ui', '-apple-system', 'Segoe UI', 'Roboto', 'Helvetica', 'Arial', 'sans-serif'],
@@ -41,49 +42,58 @@
 
     {% block extra_head %}{% endblock %}
 </head>
-<body class="h-full flex flex-col text-[#1E1E1E] antialiased">
+<body class="h-full flex flex-col text-[#1E1E1E] antialiased selection:bg-blue-600 selection:text-white">
 
-    <!-- Barra de navegación industrial -->
-    <nav class="bg-[#1E1E1E] text-white shadow-md sticky top-0 z-50 border-b border-neutral-700">
+    <!-- Barra de navegación institucional ABV Electric Supply -->
+    <header class="bg-[#1E1E1E] text-white shadow-md sticky top-0 z-50 border-b border-neutral-800">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex items-center justify-between h-16">
-                <div class="flex items-center space-x-4">
+                <!-- Marca y Título -->
+                <div class="flex items-center space-x-3 sm:space-x-4">
                     <a href="/" class="flex items-center space-x-3 text-white no-underline">
-                        <div class="bg-white rounded px-2 py-1 flex items-center justify-center">
-                            <span class="font-extrabold text-lg tracking-wider text-[#A2171B]">ABV</span>
-                            <span class="font-bold text-xs tracking-tight text-neutral-800 ml-1">ELECTRIC</span>
+                        <img src="{% static 'catalog/img/abv-logo.svg' %}" alt="ABV ELECTRIC SUPPLY" class="h-8 sm:h-9 w-auto">
+                        <div class="border-l border-neutral-700 pl-3">
+                            <span class="block text-xs uppercase tracking-widest text-neutral-400 font-semibold leading-tight">Distribución & Control</span>
+                            <span class="block text-sm sm:text-base font-bold text-white tracking-wide leading-tight">Asistente de Compatibilidad Eléctrica</span>
                         </div>
-                        <span class="hidden md:inline font-bold text-sm tracking-widest text-neutral-300 border-l border-neutral-600 pl-3">
-                            COMPATIBILIDADES ELÉCTRICAS
-                        </span>
                     </a>
                 </div>
 
-                <div class="flex items-center space-x-3">
-                    <a href="/" class="px-3 py-2 rounded-md text-sm font-medium text-white bg-neutral-800 transition">
-                        <i class="fas fa-microchip mr-1.5 text-abv-blue"></i> Consulta de Compatibilidad
-                    </a>
-                    <a href="/api/docs" target="_blank" class="px-2.5 py-1.5 rounded-md text-xs font-mono text-neutral-400 hover:text-white hover:bg-neutral-800 transition border border-neutral-700">
-                        <i class="fas fa-code mr-1"></i> API REST
-                    </a>
-                    <a href="/admin/" target="_blank" class="px-2.5 py-1.5 rounded-md text-xs font-mono text-neutral-400 hover:text-white hover:bg-neutral-800 transition border border-neutral-700">
-                        <i class="fas fa-shield-halved mr-1"></i> Admin
-                    </a>
+                <!-- Soporte y Estado de Catálogo -->
+                <div class="flex items-center space-x-3 sm:space-x-5">
+                    <div class="hidden md:flex items-center space-x-2 text-xs text-neutral-300">
+                        <i class="fas fa-headset text-abv-blue text-sm"></i>
+                        <span>Mostrador Morelia: <strong class="text-white font-semibold">(443) 314-5000</strong></span>
+                    </div>
+                    <div class="inline-flex items-center px-3 py-1.5 rounded-md text-xs font-semibold bg-neutral-900 border border-neutral-700 text-neutral-200">
+                        <span class="w-2 h-2 rounded-full bg-abv-green mr-2 animate-pulse"></span>
+                        <span class="hidden sm:inline">Catálogo Activo</span>
+                        <span class="sm:hidden">En línea</span>
+                    </div>
                 </div>
             </div>
         </div>
-    </nav>
+    </header>
 
     <!-- Contenido principal -->
     <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {% block content %}{% endblock %}
     </main>
 
-    <!-- Footer -->
+    <!-- Footer institucional discreto -->
     <footer class="bg-[#1E1E1E] text-neutral-400 border-t border-neutral-800 py-4 mt-auto">
-        <div class="max-w-7xl mx-auto px-4 text-center text-xs">
-            <p class="font-medium text-neutral-300">ABV ELECTRIC SUPPLY &mdash; Asistente de Compatibilidad entre Componentes y Tableros</p>
-            <p class="text-neutral-500 mt-1">Herramienta técnica de autoservicio &bull; Sin cotizaciones guardadas &bull; Despiece en memoria</p>
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+            <div>
+                <p class="font-medium text-neutral-300">ABV ELECTRIC SUPPLY &mdash; Soluciones Integrales en Equipo y Material Eléctrico</p>
+                <p class="text-neutral-500 text-[11px] mt-0.5">Herramienta técnica de selección y verificación de compatibilidad entre tableros, interruptores y accesorios.</p>
+            </div>
+            <div class="flex items-center space-x-3 text-neutral-500 text-[11px]">
+                <span>Morelia, Mich.</span>
+                <span>&bull;</span>
+                <a href="/api/docs" target="_blank" class="hover:text-neutral-300 transition underline underline-offset-2">API Docs</a>
+                <span>&bull;</span>
+                <a href="/admin/" target="_blank" class="hover:text-neutral-300 transition underline underline-offset-2">Acceso Administrativo</a>
+            </div>
         </div>
     </footer>
 

@@ -117,3 +117,19 @@ class CatalogSelectorsTest(TestCase):
 
         # Máximo 2 consultas SQL
         self.assertLessEqual(len(ctx), 2)
+
+    def test_get_product_compatibility_tree_bidirectional(self):
+        # 1. Al consultar el interruptor (hijo),
+        # debe retornar el tablero como host_equipment
+        it_tree = get_product_compatibility_tree(self.interruptores[0].id)
+        self.assertIsNotNone(it_tree)
+        self.assertEqual(len(it_tree["host_equipment"]), 1)
+        self.assertEqual(it_tree["host_equipment"][0]["nombre_corto"], "NQ-225-30P")
+
+        # 2. Al consultar el accesorio, debe retornar el tablero en used_in_equipment
+        zapata_tree = get_product_compatibility_tree(self.zapata.id)
+        self.assertIsNotNone(zapata_tree)
+        self.assertEqual(len(zapata_tree["used_in_equipment"]), 1)
+        self.assertEqual(
+            zapata_tree["used_in_equipment"][0]["nombre_corto"], "NQ-225-30P"
+        )
