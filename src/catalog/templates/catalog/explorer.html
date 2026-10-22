@@ -213,24 +213,115 @@
             </div>
         </div>
 
-        <!-- Mosaico / Chips de navegación rápida de la categoría activa -->
-        <div class="pt-2">
-            <div class="flex flex-wrap gap-2">
+        <!-- Filtros por Familia / Serie Técnica (reemplaza los 1,000 chips sueltos por 5 familias fijas) -->
+        <div class="pt-2 flex items-center justify-between gap-3 overflow-x-auto pb-1 text-xs">
+            <div class="flex items-center gap-1.5 flex-nowrap">
+                <span class="text-[11px] font-semibold text-neutral-500 uppercase tracking-wider shrink-0 mr-1">
+                    <i class="fas fa-layer-group text-[10px] text-abv-blue mr-1"></i> Series:
+                </span>
+                <button
+                    type="button"
+                    @click="setSeriesFilter('')"
+                    :class="!activeSeries ? 'bg-neutral-800 text-white font-bold' : 'bg-neutral-100 hover:bg-neutral-200 text-neutral-700'"
+                    class="px-2.5 py-1 rounded text-xs transition shrink-0"
+                >
+                    Todas
+                </button>
+                <button
+                    type="button"
+                    @click="setSeriesFilter('NQ')"
+                    :class="activeSeries === 'NQ' ? 'bg-abv-blue text-white font-bold' : 'bg-neutral-100 hover:bg-neutral-200 text-neutral-700'"
+                    class="px-2.5 py-1 rounded text-xs transition shrink-0"
+                >
+                    Serie NQ (Tableros 240V)
+                </button>
+                <button
+                    type="button"
+                    @click="setSeriesFilter('NF')"
+                    :class="activeSeries === 'NF' ? 'bg-abv-blue text-white font-bold' : 'bg-neutral-100 hover:bg-neutral-200 text-neutral-700'"
+                    class="px-2.5 py-1 rounded text-xs transition shrink-0"
+                >
+                    Serie NF (Tableros 480V)
+                </button>
+                <button
+                    type="button"
+                    @click="setSeriesFilter('QO')"
+                    :class="activeSeries === 'QO' ? 'bg-abv-blue text-white font-bold' : 'bg-neutral-100 hover:bg-neutral-200 text-neutral-700'"
+                    class="px-2.5 py-1 rounded text-xs transition shrink-0"
+                >
+                    Serie QO / QOB
+                </button>
+                <button
+                    type="button"
+                    @click="setSeriesFilter('EDB')"
+                    :class="activeSeries === 'EDB' ? 'bg-abv-blue text-white font-bold' : 'bg-neutral-100 hover:bg-neutral-200 text-neutral-700'"
+                    class="px-2.5 py-1 rounded text-xs transition shrink-0"
+                >
+                    Serie EDB
+                </button>
+                <button
+                    type="button"
+                    @click="setSeriesFilter('KIT')"
+                    :class="activeSeries === 'KIT' ? 'bg-abv-blue text-white font-bold' : 'bg-neutral-100 hover:bg-neutral-200 text-neutral-700'"
+                    class="px-2.5 py-1 rounded text-xs transition shrink-0"
+                >
+                    Zapatas & Herrajes
+                </button>
+            </div>
+
+            <!-- Botón para alternar vista de cuadrícula -->
+            <button
+                type="button"
+                @click="showCatalogGrid = !showCatalogGrid"
+                class="text-[11px] font-semibold text-neutral-600 hover:text-abv-blue shrink-0 flex items-center gap-1 transition"
+            >
+                <i :class="showCatalogGrid ? 'fas fa-chevron-up' : 'fas fa-chevron-down'"></i>
+                <span x-text="showCatalogGrid ? 'Ocultar Cuadrícula' : 'Ver Catálogo'"></span>
+            </button>
+        </div>
+
+        <!-- Malla Estructurada de Catálogo (Tarjetas técnicas paginadas en vez de chips sueltos) -->
+        <div x-show="showCatalogGrid" x-transition class="pt-2 space-y-3">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                 <template x-for="p in categoryItems" :key="p.id">
-                    <button
-                        type="button"
-                        @click="selectProductById(p.id)"
-                        :class="selectedProductId == p.id ? 'bg-abv-blue text-white border-abv-blue shadow-sm' : 'bg-neutral-50 hover:bg-neutral-100 text-neutral-800 border-neutral-300'"
-                        class="px-2.5 py-1 text-xs font-mono rounded border transition flex items-center gap-1.5"
+                    <div
+                        :class="selectedProductId == p.id ? 'border-abv-blue ring-2 ring-blue-100 bg-blue-50/20' : 'border-neutral-200 bg-neutral-50/50 hover:border-neutral-300'"
+                        class="p-3 rounded-lg border transition flex flex-col justify-between space-y-2 text-xs"
                     >
-                        <strong x-text="p.nombre_corto"></strong>
-                        <span class="font-sans text-[11px] opacity-80 truncate max-w-[140px]" x-text="p.nombre_largo"></span>
-                    </button>
+                        <div>
+                            <div class="flex items-center justify-between">
+                                <span class="font-mono font-bold text-abv-dark" x-text="p.nombre_corto"></span>
+                                <span
+                                    class="text-[10px] font-semibold px-2 py-0.2 rounded-full uppercase"
+                                    :class="getCategoryBadgeClass(p.category)"
+                                    x-text="getCategoryLabel(p.category)"
+                                ></span>
+                            </div>
+                            <div class="font-semibold text-neutral-800 mt-1 line-clamp-1" x-text="p.nombre_largo"></div>
+                            <p class="text-[11px] text-neutral-500 line-clamp-2 mt-0.5" x-text="p.descripcion"></p>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2 pt-2 border-t border-neutral-200">
+                            <button
+                                type="button"
+                                @click="selectProductById(p.id)"
+                                class="py-1 px-2 bg-white hover:bg-neutral-100 text-neutral-800 text-[11px] font-semibold rounded border border-neutral-300 transition flex items-center justify-center gap-1"
+                            >
+                                <i class="fas fa-sliders text-[10px] text-abv-blue"></i> Explorar
+                            </button>
+                            <button
+                                type="button"
+                                @click="addToList(p.id, p.nombre_corto, p.nombre_largo, 1, 'Catálogo')"
+                                class="py-1 px-2 bg-abv-dark hover:bg-abv-dark-hover text-white text-[11px] font-bold rounded transition flex items-center justify-center gap-1"
+                            >
+                                <i class="fas fa-plus text-[10px] text-abv-green"></i> Agregar
+                            </button>
+                        </div>
+                    </div>
                 </template>
             </div>
 
             <!-- Botón de "Cargar más" si hay más productos en la base de datos -->
-            <div x-show="categoryTotal > categoryItems.length" class="pt-3 text-center">
+            <div x-show="categoryTotal > categoryItems.length" class="pt-2 text-center">
                 <button
                     type="button"
                     @click="loadMoreCategoryItems()"
@@ -238,7 +329,7 @@
                     class="px-4 py-1.5 text-xs font-semibold bg-neutral-100 hover:bg-neutral-200 text-neutral-800 rounded-lg border border-neutral-300 transition flex items-center gap-2 mx-auto"
                 >
                     <i x-show="loadingCategory" class="fas fa-circle-notch fa-spin text-abv-blue"></i>
-                    <span x-text="`Cargar más productos (mostrando ${categoryItems.length} de ${categoryTotal})...`"></span>
+                    <span x-text="`Cargar más equipos (mostrando ${categoryItems.length} de ${categoryTotal})...`"></span>
                 </button>
             </div>
         </div>
@@ -879,6 +970,8 @@
 
             // Categoría activa y paginación en servidor
             categoryFilter: 'all',
+            activeSeries: '',
+            showCatalogGrid: true,
             categoryItems: [],
             categoryTotal: 0,
             categoryOffset: 0,
@@ -959,8 +1052,10 @@
 
             async setCategoryFilter(cat) {
                 this.categoryFilter = cat;
+                this.activeSeries = '';
                 this.categoryOffset = 0;
                 this.loadingCategory = true;
+                this.showCatalogGrid = true;
 
                 try {
                     const param = cat === 'all' ? '' : `&category=${encodeURIComponent(cat)}`;
@@ -972,6 +1067,28 @@
                     }
                 } catch (e) {
                     console.error('Error al filtrar por categoría:', e);
+                } finally {
+                    this.loadingCategory = false;
+                }
+            },
+
+            async setSeriesFilter(prefix) {
+                this.activeSeries = prefix;
+                this.categoryOffset = 0;
+                this.loadingCategory = true;
+                this.showCatalogGrid = true;
+
+                try {
+                    const searchParam = prefix ? `&search=${encodeURIComponent(prefix)}` : '';
+                    const catParam = this.categoryFilter === 'all' ? '' : `&category=${encodeURIComponent(this.categoryFilter)}`;
+                    const res = await fetch(`/api/v1/catalog/products/?limit=${this.categoryLimit}&offset=0${catParam}${searchParam}`);
+                    if (res.ok) {
+                        const data = await res.json();
+                        this.categoryItems = data.items || [];
+                        this.categoryTotal = data.total || 0;
+                    }
+                } catch (e) {
+                    console.error('Error al filtrar por serie:', e);
                 } finally {
                     this.loadingCategory = false;
                 }
