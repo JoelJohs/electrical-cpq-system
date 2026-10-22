@@ -54,6 +54,13 @@ class CatalogAPITest(TestCase):
         self.assertEqual(data["total"], 1)
         self.assertEqual(data["items"][0]["nombre_corto"], "AUX-QO")
 
+    def test_search_multi_word_tokens(self):
+        response = self.client.get("/api/v1/catalog/products/?search=tablero+225")
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(data["total"], 1)
+        self.assertEqual(data["items"][0]["nombre_corto"], "NQ-225-30P")
+
     def test_list_products_category_filter(self):
         response = self.client.get("/api/v1/catalog/products/?category=tableros")
         self.assertEqual(response.status_code, 200)

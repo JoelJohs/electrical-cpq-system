@@ -2,7 +2,7 @@
 
 from typing import Any, Optional
 
-from django.db.models import Q, QuerySet
+from django.db.models import Case, IntegerField, Q, QuerySet, Value, When
 
 from catalog.enums import RelationshipType
 from catalog.models import Product, ProductCompatibility
@@ -24,15 +24,9 @@ def list_active_products(
     search: Optional[str] = None,
     category: Optional[str] = None,
 ) -> QuerySet[Product]:
-    """Lista productos activos con búsqueda opcional y filtro por categoría."""
-    qs = Product.objects.filter(is_active=True).order_by("nombre_corto")
-    if search:
-        query = search.strip()
-        qs = qs.filter(
-            Q(nombre_corto__icontains=query)
-            | Q(nombre_largo__icontains=query)
-            | Q(descripcion__icontains=query)
-        )
+    """Lista productos activos con búsqueda inteligente y filtro por categoría."""
+    qs = Product.objects.filter(is_active=True)
+
     if category:
         cat = category.strip().lower()
         tablero_q = (
@@ -58,6 +52,35 @@ def list_active_products(
             qs = qs.filter(interruptor_q)
         elif cat == "accesorios":
             qs = qs.exclude(tablero_q | interruptor_q)
+
+    if search:
+        query = search.strip()
+        tokens = [t for t in query.split() if t]
+        for token in tokens:
+            token_clean = token.replace("-", "")
+            token_q = (
+                Q(nombre_corto__icontains=token)
+                | Q(nombre_largo__icontains=token)
+                | Q(descripcion__icontains=token)
+            )
+            if token_clean:
+                token_q |= Q(nombre_corto__icontains=token_clean)
+            qs = qs.filter(token_q)
+
+        # Ranking de relevancia SQL determinista (exacto > prefijo > parcial)
+        qs = qs.annotate(
+            search_rank=Case(
+                When(nombre_corto__iexact=query, then=Value(100)),
+                When(nombre_corto__istartswith=query, then=Value(80)),
+                When(nombre_corto__icontains=query, then=Value(60)),
+                When(nombre_largo__icontains=query, then=Value(40)),
+                default=Value(10),
+                output_field=IntegerField(),
+            )
+        ).order_by("-search_rank", "nombre_corto")
+    else:
+        qs = qs.order_by("nombre_corto")
+
     return qs
 
 

@@ -104,6 +104,15 @@ class CatalogSelectorsTest(TestCase):
         accesorios = list_active_products(category="accesorios")
         self.assertEqual(len(accesorios), 2)
 
+        # Búsqueda inteligente por tokens / múltiples palabras coincidentes
+        multi_search = list_active_products(search="tablero 225")
+        self.assertEqual(len(multi_search), 1)
+        self.assertEqual(multi_search[0].nombre_corto, "NQ-225-30P")
+
+        multi_qo = list_active_products(search="qo 101")
+        self.assertEqual(len(multi_qo), 1)
+        self.assertEqual(multi_qo[0].nombre_corto, "QO-101")
+
     def test_get_product_compatibilities(self):
         compatibilities = get_product_compatibilities(self.tablero.id)
         # 3 comp + 1 zapata + 1 req = 5

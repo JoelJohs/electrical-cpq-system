@@ -46,101 +46,137 @@
         <span x-text="toast.message" class="font-medium"></span>
     </div>
 
-    <!-- Barra Superior de Navegación del Catálogo y Búsqueda Omnibar para miles de componentes (no-print) -->
-    <div class="no-print bg-white p-5 rounded-xl border border-abv-border shadow-sm space-y-4">
+    <!-- Módulo Central de Búsqueda Inteligente y Filtros (no-print) -->
+    <div class="no-print bg-white p-5 sm:p-6 rounded-xl border border-abv-border shadow-sm space-y-4">
         
-        <!-- Encabezado y Omnibar con Autocomplete en Tiempo Real -->
-        <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-3">
             <div>
-                <div class="flex items-center gap-2">
-                    <h1 class="text-xl sm:text-2xl font-extrabold text-abv-dark tracking-tight">Catálogo Técnico de Compatibilidad</h1>
-                    <span class="text-[11px] font-bold text-neutral-500 bg-neutral-100 px-2 py-0.5 rounded-full border border-neutral-200" x-text="`${totalCatalogCount} equipos en base`"></span>
-                </div>
-                <p class="text-xs text-neutral-600 mt-1">
-                    Buscador técnico preparado para cientos o miles de tableros, interruptores termomagnéticos y accesorios.
+                <h1 class="text-xl sm:text-2xl font-extrabold text-abv-dark tracking-tight">Catálogo Técnico de Compatibilidad</h1>
+                <p class="text-xs sm:text-sm text-neutral-600 mt-0.5">
+                    Busca por modelo, código, capacidad, amperaje o polos para verificar compatibilidades físicas y eléctricas.
                 </p>
             </div>
             
-            <!-- Omnibar / Combobox con búsqueda debounced en el servidor -->
-            <div class="w-full lg:w-[480px] relative" @click.outside="searchOpen = false">
-                <div class="relative">
-                    <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 text-xs"></i>
-                    <input
-                        type="text"
-                        x-model="searchQuery"
-                        @focus="openSearchDropdown()"
-                        @input.debounce.250ms="onSearchInput()"
-                        @keydown.arrow-down.prevent="navigateSearch(1)"
-                        @keydown.arrow-up.prevent="navigateSearch(-1)"
-                        @keydown.enter.prevent="selectHighlightedSearch()"
-                        @keydown.escape="searchOpen = false"
-                        placeholder="Buscar por código o modelo (ej. NQ-225, QO-120, EDB, Zapata)..."
-                        class="w-full pl-8 pr-8 py-2 text-xs border border-abv-border rounded-lg bg-neutral-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-abv-blue text-neutral-800 transition"
-                    >
-                    <div class="absolute right-2.5 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
-                        <i x-show="searching" class="fas fa-circle-notch fa-spin text-abv-blue text-xs"></i>
-                        <button
-                            type="button"
-                            x-show="searchQuery && !searching"
-                            @click="clearSearch()"
-                            class="text-neutral-400 hover:text-neutral-600 text-xs"
-                        >
-                            <i class="fas fa-times-circle"></i>
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Dropdown Flotante de Resultados de Búsqueda -->
-                <div
-                    x-show="searchOpen"
-                    x-transition:enter="transition ease-out duration-150"
-                    x-transition:enter-start="opacity-0 translate-y-1"
-                    x-transition:enter-end="opacity-100 translate-y-0"
-                    class="absolute left-0 right-0 top-full mt-1.5 bg-white border border-abv-border rounded-xl shadow-2xl z-50 max-h-80 overflow-y-auto divide-y divide-neutral-100"
+            <!-- Filtro de Categoría Rápido -->
+            <div class="inline-flex rounded-lg border border-neutral-300 p-0.5 bg-neutral-100 self-start md:self-auto text-xs font-semibold shrink-0">
+                <button
+                    type="button"
+                    @click="setCategoryFilter('all')"
+                    :class="categoryFilter === 'all' ? 'bg-white text-abv-dark shadow-sm font-bold' : 'text-neutral-600 hover:text-neutral-900'"
+                    class="px-3 py-1.5 rounded-md transition"
                 >
-                    <!-- Encabezado de estado de resultados -->
-                    <div class="px-3 py-2 bg-neutral-50 flex items-center justify-between text-[11px] text-neutral-500 font-semibold sticky top-0 z-10 border-b border-neutral-200">
-                        <span x-show="searchQuery.trim().length >= 2" x-text="`Resultados encontrados: ${searchResults.length}`"></span>
-                        <span x-show="searchQuery.trim().length < 2">Equipos recientes / recomendados</span>
-                        <span class="text-[10px] text-neutral-400">Usa ↑ ↓ Enter</span>
-                    </div>
+                    Todos
+                </button>
+                <button
+                    type="button"
+                    @click="setCategoryFilter('tableros')"
+                    :class="categoryFilter === 'tableros' ? 'bg-abv-blue text-white shadow-sm font-bold' : 'text-neutral-600 hover:text-neutral-900'"
+                    class="px-3 py-1.5 rounded-md transition flex items-center gap-1.5"
+                >
+                    <i class="fas fa-server text-[10px]"></i> Tableros
+                </button>
+                <button
+                    type="button"
+                    @click="setCategoryFilter('interruptores')"
+                    :class="categoryFilter === 'interruptores' ? 'bg-abv-blue text-white shadow-sm font-bold' : 'text-neutral-600 hover:text-neutral-900'"
+                    class="px-3 py-1.5 rounded-md transition flex items-center gap-1.5"
+                >
+                    <i class="fas fa-toggle-on text-[10px]"></i> Interruptores
+                </button>
+                <button
+                    type="button"
+                    @click="setCategoryFilter('accesorios')"
+                    :class="categoryFilter === 'accesorios' ? 'bg-abv-blue text-white shadow-sm font-bold' : 'text-neutral-600 hover:text-neutral-900'"
+                    class="px-3 py-1.5 rounded-md transition flex items-center gap-1.5"
+                >
+                    <i class="fas fa-puzzle-piece text-[10px]"></i> Accesorios
+                </button>
+            </div>
+        </div>
 
-                    <!-- Estado sin resultados -->
-                    <div x-show="searchQuery.trim().length >= 2 && searchResults.length === 0 && !searching" class="p-6 text-center text-xs text-neutral-400">
-                        <i class="fas fa-magnifying-glass text-xl mb-1 text-neutral-300"></i>
-                        <p class="font-medium text-neutral-600">No se encontraron componentes con esa búsqueda.</p>
-                        <p class="text-[11px] mt-0.5">Prueba buscando por prefijo de serie (ej. QO, NQ, EDB, AUX).</p>
-                    </div>
-
-                    <!-- Lista de opciones del buscador -->
-                    <template x-for="(item, idx) in searchResults" :key="item.id">
-                        <div
-                            @click="selectProductById(item.id); searchOpen = false"
-                            @mouseenter="selectedIndex = idx"
-                            :class="selectedIndex === idx ? 'bg-blue-50/80 text-abv-blue' : 'hover:bg-neutral-50 text-neutral-800'"
-                            class="px-3.5 py-2.5 cursor-pointer flex items-center justify-between gap-3 text-xs transition"
-                        >
-                            <div class="overflow-hidden">
-                                <div class="flex items-center gap-2">
-                                    <span class="font-mono font-bold text-abv-dark text-xs" x-text="item.nombre_corto"></span>
-                                    <span
-                                        class="text-[10px] font-semibold px-2 py-0.2 rounded-full uppercase"
-                                        :class="getCategoryBadgeClass(item.category)"
-                                        x-text="getCategoryLabel(item.category)"
-                                    ></span>
-                                </div>
-                                <div class="text-[11px] text-neutral-600 truncate mt-0.5" x-text="item.nombre_largo"></div>
-                            </div>
-                            <span class="text-[10px] font-semibold text-neutral-400 shrink-0">Seleccionar &rarr;</span>
-                        </div>
-                    </template>
+        <!-- Buscador Inteligente por Múltiples Coincidencias (Tokens) -->
+        <div class="relative" @click.outside="searchOpen = false">
+            <div class="relative">
+                <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-neutral-400 text-sm"></i>
+                <input
+                    type="text"
+                    x-model="searchQuery"
+                    @focus="openSearchDropdown()"
+                    @input.debounce.200ms="onSearchInput()"
+                    @keydown.arrow-down.prevent="navigateSearch(1)"
+                    @keydown.arrow-up.prevent="navigateSearch(-1)"
+                    @keydown.enter.prevent="selectHighlightedSearch()"
+                    @keydown.escape="searchOpen = false"
+                    placeholder="Escribe para buscar (ej. NQ 225, QO 20A, EDB 100A, zapata, contacto)..."
+                    class="w-full pl-11 pr-10 py-3 text-sm border border-abv-border rounded-lg bg-neutral-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-abv-blue text-neutral-900 transition shadow-inner font-medium placeholder:text-neutral-400"
+                >
+                <div class="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
+                    <i x-show="searching" class="fas fa-circle-notch fa-spin text-abv-blue text-sm"></i>
+                    <button
+                        type="button"
+                        x-show="searchQuery && !searching"
+                        @click="clearSearch()"
+                        class="text-neutral-400 hover:text-neutral-600 text-sm"
+                        title="Limpiar búsqueda"
+                    >
+                        <i class="fas fa-times-circle"></i>
+                    </button>
                 </div>
+            </div>
+
+            <!-- Menú Inteligente de Coincidencias Encontradas -->
+            <div
+                x-show="searchOpen"
+                x-transition:enter="transition ease-out duration-150"
+                x-transition:enter-start="opacity-0 translate-y-1"
+                x-transition:enter-end="opacity-100 translate-y-0"
+                class="absolute left-0 right-0 top-full mt-1.5 bg-white border border-abv-border rounded-xl shadow-2xl z-50 max-h-96 overflow-y-auto divide-y divide-neutral-100"
+            >
+                <!-- Encabezado del menú -->
+                <div class="px-4 py-2 bg-neutral-50 flex items-center justify-between text-xs text-neutral-600 font-semibold sticky top-0 z-10 border-b border-neutral-200">
+                    <span x-show="searchQuery.trim().length >= 1" x-text="`Coincidencias encontradas: ${searchResults.length}`"></span>
+                    <span x-show="searchQuery.trim().length < 1">Equipos recomendados / recientes</span>
+                    <span class="text-[11px] text-neutral-400">Navega con ↑ ↓ y Enter</span>
+                </div>
+
+                <!-- Sin coincidencias -->
+                <div x-show="searchResults.length === 0 && !searching" class="p-6 text-center text-xs text-neutral-400">
+                    <i class="fas fa-magnifying-glass text-2xl mb-1 text-neutral-300"></i>
+                    <p class="font-bold text-neutral-700">No hay coincidencias para esa consulta.</p>
+                    <p class="text-[11px] text-neutral-500 mt-0.5">Prueba buscando por número de catálogo (ej. NQ, QO, EDB) o por palabras clave separadas.</p>
+                </div>
+
+                <!-- Lista de resultados -->
+                <template x-for="(item, idx) in searchResults" :key="item.id">
+                    <div
+                        @click="selectProductById(item.id); searchOpen = false"
+                        @mouseenter="selectedIndex = idx"
+                        :class="selectedIndex === idx ? 'bg-blue-50/80 text-abv-blue' : 'hover:bg-neutral-50 text-neutral-800'"
+                        class="px-4 py-3 cursor-pointer flex items-center justify-between gap-3 text-xs transition"
+                    >
+                        <div class="overflow-hidden">
+                            <div class="flex items-center gap-2">
+                                <span class="font-mono font-bold text-abv-dark text-xs" x-text="item.nombre_corto"></span>
+                                <span
+                                    class="text-[10px] font-semibold px-2 py-0.2 rounded-full uppercase"
+                                    :class="getCategoryBadgeClass(item.category)"
+                                    x-text="getCategoryLabel(item.category)"
+                                ></span>
+                            </div>
+                            <div class="text-xs text-neutral-800 font-medium truncate mt-0.5" x-text="item.nombre_largo"></div>
+                            <p class="text-[11px] text-neutral-500 truncate mt-0.5" x-text="item.descripcion"></p>
+                        </div>
+                        <span class="text-[11px] font-bold text-abv-blue shrink-0 flex items-center gap-1">
+                            Seleccionar <i class="fas fa-chevron-right text-[10px]"></i>
+                        </span>
+                    </div>
+                </template>
             </div>
         </div>
 
         <!-- Historial Rápido de Consulta (Vistos Recientemente) -->
-        <div x-show="recentProducts.length > 0" class="pt-2 flex items-center gap-2 overflow-x-auto text-xs pb-1">
-            <span class="text-[11px] text-neutral-500 font-semibold shrink-0 flex items-center gap-1">
+        <div x-show="recentProducts.length > 0" class="flex items-center gap-2 text-xs pt-1 overflow-x-auto">
+            <span class="text-neutral-400 text-[11px] font-medium shrink-0 flex items-center gap-1">
                 <i class="fas fa-clock-rotate-left text-[10px]"></i> Recientes:
             </span>
             <div class="flex items-center gap-1.5 flex-nowrap">
@@ -148,232 +184,56 @@
                     <button
                         type="button"
                         @click="selectProductById(r.id)"
-                        :class="selectedProductId == r.id ? 'bg-abv-dark text-white border-abv-dark' : 'bg-neutral-100 hover:bg-neutral-200 text-neutral-800 border-neutral-300'"
-                        class="px-2 py-0.5 text-xs font-mono rounded border transition shrink-0 flex items-center gap-1"
+                        :class="selectedProductId == r.id ? 'bg-abv-dark text-white font-bold' : 'bg-neutral-100 hover:bg-neutral-200 text-neutral-800 border-neutral-300'"
+                        class="px-2.5 py-0.5 rounded text-xs font-mono border transition shrink-0"
                     >
-                        <strong x-text="r.nombre_corto"></strong>
+                        <span x-text="r.nombre_corto"></span>
                     </button>
                 </template>
             </div>
         </div>
 
-        <!-- Pestañas de Categoría con Paginación Servidor para miles de productos -->
-        <div class="pt-3 border-t border-abv-border-subtle flex flex-wrap items-center justify-between gap-3">
-            <div class="flex flex-wrap items-center gap-1.5">
-                <button
-                    type="button"
-                    @click="setCategoryFilter('all')"
-                    :class="categoryFilter === 'all' ? 'bg-[#1E1E1E] text-white border-[#1E1E1E]' : 'bg-white text-neutral-700 border-abv-border hover:bg-neutral-100'"
-                    class="px-3 py-1.5 rounded-full text-xs font-semibold border transition flex items-center gap-1.5"
-                >
-                    <span>Todos</span>
-                    <span class="text-[10px] px-1.5 py-0.2 rounded-full" :class="categoryFilter === 'all' ? 'bg-neutral-700 text-neutral-200' : 'bg-neutral-200 text-neutral-700'" x-text="totalCatalogCount"></span>
-                </button>
-                <button
-                    type="button"
-                    @click="setCategoryFilter('tableros')"
-                    :class="categoryFilter === 'tableros' ? 'bg-abv-blue text-white border-abv-blue' : 'bg-white text-neutral-700 border-abv-border hover:bg-neutral-100'"
-                    class="px-3 py-1.5 rounded-full text-xs font-semibold border transition flex items-center gap-1.5"
-                >
-                    <i class="fas fa-server text-[10px]"></i>
-                    <span>Tableros</span>
-                </button>
-                <button
-                    type="button"
-                    @click="setCategoryFilter('interruptores')"
-                    :class="categoryFilter === 'interruptores' ? 'bg-abv-blue text-white border-abv-blue' : 'bg-white text-neutral-700 border-abv-border hover:bg-neutral-100'"
-                    class="px-3 py-1.5 rounded-full text-xs font-semibold border transition flex items-center gap-1.5"
-                >
-                    <i class="fas fa-toggle-on text-[10px]"></i>
-                    <span>Interruptores</span>
-                </button>
-                <button
-                    type="button"
-                    @click="setCategoryFilter('accesorios')"
-                    :class="categoryFilter === 'accesorios' ? 'bg-abv-blue text-white border-abv-blue' : 'bg-white text-neutral-700 border-abv-border hover:bg-neutral-100'"
-                    class="px-3 py-1.5 rounded-full text-xs font-semibold border transition flex items-center gap-1.5"
-                >
-                    <i class="fas fa-puzzle-piece text-[10px]"></i>
-                    <span>Accesorios & Zapatas</span>
-                </button>
-            </div>
-
-            <!-- Selector desplegable con soporte para cambio rápido -->
-            <div class="w-full sm:w-auto min-w-[260px]">
-                <select
-                    x-model="selectedProductId"
-                    @change="selectProductById(selectedProductId)"
-                    class="w-full px-3 py-1.5 text-xs font-medium border border-abv-border rounded-lg bg-white text-neutral-800 focus:outline-none focus:ring-2 focus:ring-abv-blue"
-                >
-                    <option value="">-- Seleccionar desde catálogo --</option>
-                    {% for p in products %}
-                    <option value="{{ p.id }}">{{ p.nombre_corto }} &bull; {{ p.nombre_largo }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-        </div>
-
-        <!-- Filtros por Familia / Serie Técnica (reemplaza los 1,000 chips sueltos por 5 familias fijas) -->
-        <div class="pt-2 flex items-center justify-between gap-3 overflow-x-auto pb-1 text-xs">
-            <div class="flex items-center gap-1.5 flex-nowrap">
-                <span class="text-[11px] font-semibold text-neutral-500 uppercase tracking-wider shrink-0 mr-1">
-                    <i class="fas fa-layer-group text-[10px] text-abv-blue mr-1"></i> Series:
-                </span>
-                <button
-                    type="button"
-                    @click="setSeriesFilter('')"
-                    :class="!activeSeries ? 'bg-neutral-800 text-white font-bold' : 'bg-neutral-100 hover:bg-neutral-200 text-neutral-700'"
-                    class="px-2.5 py-1 rounded text-xs transition shrink-0"
-                >
-                    Todas
-                </button>
-                <button
-                    type="button"
-                    @click="setSeriesFilter('NQ')"
-                    :class="activeSeries === 'NQ' ? 'bg-abv-blue text-white font-bold' : 'bg-neutral-100 hover:bg-neutral-200 text-neutral-700'"
-                    class="px-2.5 py-1 rounded text-xs transition shrink-0"
-                >
-                    Serie NQ (Tableros 240V)
-                </button>
-                <button
-                    type="button"
-                    @click="setSeriesFilter('NF')"
-                    :class="activeSeries === 'NF' ? 'bg-abv-blue text-white font-bold' : 'bg-neutral-100 hover:bg-neutral-200 text-neutral-700'"
-                    class="px-2.5 py-1 rounded text-xs transition shrink-0"
-                >
-                    Serie NF (Tableros 480V)
-                </button>
-                <button
-                    type="button"
-                    @click="setSeriesFilter('QO')"
-                    :class="activeSeries === 'QO' ? 'bg-abv-blue text-white font-bold' : 'bg-neutral-100 hover:bg-neutral-200 text-neutral-700'"
-                    class="px-2.5 py-1 rounded text-xs transition shrink-0"
-                >
-                    Serie QO / QOB
-                </button>
-                <button
-                    type="button"
-                    @click="setSeriesFilter('EDB')"
-                    :class="activeSeries === 'EDB' ? 'bg-abv-blue text-white font-bold' : 'bg-neutral-100 hover:bg-neutral-200 text-neutral-700'"
-                    class="px-2.5 py-1 rounded text-xs transition shrink-0"
-                >
-                    Serie EDB
-                </button>
-                <button
-                    type="button"
-                    @click="setSeriesFilter('KIT')"
-                    :class="activeSeries === 'KIT' ? 'bg-abv-blue text-white font-bold' : 'bg-neutral-100 hover:bg-neutral-200 text-neutral-700'"
-                    class="px-2.5 py-1 rounded text-xs transition shrink-0"
-                >
-                    Zapatas & Herrajes
-                </button>
-            </div>
-
-            <!-- Botón para alternar vista de cuadrícula -->
-            <button
-                type="button"
-                @click="showCatalogGrid = !showCatalogGrid"
-                class="text-[11px] font-semibold text-neutral-600 hover:text-abv-blue shrink-0 flex items-center gap-1 transition"
-            >
-                <i :class="showCatalogGrid ? 'fas fa-chevron-up' : 'fas fa-chevron-down'"></i>
-                <span x-text="showCatalogGrid ? 'Ocultar Cuadrícula' : 'Ver Catálogo'"></span>
-            </button>
-        </div>
-
-        <!-- Malla Estructurada de Catálogo (Tarjetas técnicas paginadas en vez de chips sueltos) -->
-        <div x-show="showCatalogGrid" x-transition class="pt-2 space-y-3">
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                <template x-for="p in categoryItems" :key="p.id">
-                    <div
-                        :class="selectedProductId == p.id ? 'border-abv-blue ring-2 ring-blue-100 bg-blue-50/20' : 'border-neutral-200 bg-neutral-50/50 hover:border-neutral-300'"
-                        class="p-3 rounded-lg border transition flex flex-col justify-between space-y-2 text-xs"
-                    >
-                        <div>
-                            <div class="flex items-center justify-between">
-                                <span class="font-mono font-bold text-abv-dark" x-text="p.nombre_corto"></span>
-                                <span
-                                    class="text-[10px] font-semibold px-2 py-0.2 rounded-full uppercase"
-                                    :class="getCategoryBadgeClass(p.category)"
-                                    x-text="getCategoryLabel(p.category)"
-                                ></span>
-                            </div>
-                            <div class="font-semibold text-neutral-800 mt-1 line-clamp-1" x-text="p.nombre_largo"></div>
-                            <p class="text-[11px] text-neutral-500 line-clamp-2 mt-0.5" x-text="p.descripcion"></p>
-                        </div>
-                        <div class="grid grid-cols-2 gap-2 pt-2 border-t border-neutral-200">
-                            <button
-                                type="button"
-                                @click="selectProductById(p.id)"
-                                class="py-1 px-2 bg-white hover:bg-neutral-100 text-neutral-800 text-[11px] font-semibold rounded border border-neutral-300 transition flex items-center justify-center gap-1"
-                            >
-                                <i class="fas fa-sliders text-[10px] text-abv-blue"></i> Explorar
-                            </button>
-                            <button
-                                type="button"
-                                @click="addToList(p.id, p.nombre_corto, p.nombre_largo, 1, 'Catálogo')"
-                                class="py-1 px-2 bg-abv-dark hover:bg-abv-dark-hover text-white text-[11px] font-bold rounded transition flex items-center justify-center gap-1"
-                            >
-                                <i class="fas fa-plus text-[10px] text-abv-green"></i> Agregar
-                            </button>
-                        </div>
-                    </div>
-                </template>
-            </div>
-
-            <!-- Botón de "Cargar más" si hay más productos en la base de datos -->
-            <div x-show="categoryTotal > categoryItems.length" class="pt-2 text-center">
-                <button
-                    type="button"
-                    @click="loadMoreCategoryItems()"
-                    :disabled="loadingCategory"
-                    class="px-4 py-1.5 text-xs font-semibold bg-neutral-100 hover:bg-neutral-200 text-neutral-800 rounded-lg border border-neutral-300 transition flex items-center gap-2 mx-auto"
-                >
-                    <i x-show="loadingCategory" class="fas fa-circle-notch fa-spin text-abv-blue"></i>
-                    <span x-text="`Cargar más equipos (mostrando ${categoryItems.length} de ${categoryTotal})...`"></span>
-                </button>
-            </div>
-        </div>
-
     </div>
 
-    <!-- Layout Principal: Explorador Técnico (8 cols) / Despiece y Lista de Materiales (4 cols) -->
+    <!-- Layout Principal: Ficha Técnica (8 cols) / Despiece BOM (4 cols) -->
     <div class="no-print grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
 
         <!-- Columna Izquierda: Ficha Técnica y Grafo de Compatibilidad (8 cols) -->
         <div class="lg:col-span-8 space-y-6">
 
             <!-- Estado Inicial: Ningún equipo seleccionado -->
-            <div x-show="!selectedProduct && !loadingProduct" class="bg-white p-8 rounded-xl border border-abv-border shadow-sm text-center space-y-4">
-                <div class="w-12 h-12 mx-auto rounded-full bg-blue-50 text-abv-blue flex items-center justify-center text-xl">
-                    <i class="fas fa-layer-group"></i>
+            <div x-show="!selectedProduct && !loadingProduct" class="bg-white p-10 rounded-xl border border-abv-border shadow-sm text-center space-y-4">
+                <div class="w-14 h-14 mx-auto rounded-full bg-blue-50 text-abv-blue flex items-center justify-center text-2xl">
+                    <i class="fas fa-magnifying-glass"></i>
                 </div>
                 <div class="max-w-md mx-auto">
-                    <h2 class="text-base font-bold text-abv-dark">Selecciona un equipo para comenzar</h2>
+                    <h2 class="text-lg font-bold text-abv-dark">Consulta de Compatibilidad Eléctrica</h2>
                     <p class="text-xs text-neutral-500 mt-1">
-                        Utiliza el buscador superior para localizar cualquier componente entre cientos de modelos, o explora las categorías de tableros, interruptores y accesorios.
+                        Utiliza el buscador superior para escribir cualquier modelo o descripción técnica y abrir su mapa de compatibilidad y despiece.
                     </p>
                 </div>
-                <div class="flex flex-wrap justify-center gap-2 pt-2">
+                <div class="flex flex-wrap justify-center items-center gap-2 pt-2 text-xs">
+                    <span class="text-neutral-400 text-[11px]">Sugerencias de inicio:</span>
                     <button
                         type="button"
                         @click="selectByShortCode('NQ-225-30P')"
-                        class="px-3 py-1.5 bg-neutral-100 hover:bg-neutral-200 text-abv-dark text-xs font-semibold rounded-lg border border-neutral-300 transition"
+                        class="px-3 py-1.5 bg-neutral-100 hover:bg-neutral-200 text-neutral-800 font-semibold rounded-lg border border-neutral-300 transition"
                     >
-                        <i class="fas fa-server mr-1 text-abv-blue"></i> Tablero NQ 225A
+                        Tablero NQ-225
                     </button>
                     <button
                         type="button"
                         @click="selectByShortCode('QO-120')"
-                        class="px-3 py-1.5 bg-neutral-100 hover:bg-neutral-200 text-abv-dark text-xs font-semibold rounded-lg border border-neutral-300 transition"
+                        class="px-3 py-1.5 bg-neutral-100 hover:bg-neutral-200 text-neutral-800 font-semibold rounded-lg border border-neutral-300 transition"
                     >
-                        <i class="fas fa-toggle-on mr-1 text-abv-blue"></i> Interruptor QO 1P 20A
+                        Interruptor QO-120
                     </button>
                     <button
                         type="button"
                         @click="selectByShortCode('AUX-QO')"
-                        class="px-3 py-1.5 bg-neutral-100 hover:bg-neutral-200 text-abv-dark text-xs font-semibold rounded-lg border border-neutral-300 transition"
+                        class="px-3 py-1.5 bg-neutral-100 hover:bg-neutral-200 text-neutral-800 font-semibold rounded-lg border border-neutral-300 transition"
                     >
-                        <i class="fas fa-puzzle-piece mr-1 text-abv-blue"></i> Contacto Auxiliar QO
+                        Contacto Auxiliar AUX-QO
                     </button>
                 </div>
             </div>
@@ -434,7 +294,6 @@
                             </p>
                         </div>
                         <div class="flex items-center gap-2">
-                            <!-- Sub-buscador reactivo si hay muchos tableros -->
                             <input
                                 x-show="hostEquipment.length > 4"
                                 type="text"
@@ -477,7 +336,6 @@
                         </template>
                     </div>
 
-                    <!-- Paginación de tableros si hay decenas -->
                     <div x-show="filteredHostEquipment.length > hostLimit" class="pt-2 text-center">
                         <button
                             type="button"
@@ -533,7 +391,7 @@
                     </div>
                 </div>
 
-                <!-- 3. COMPONENTES COMPATIBLES (MONTAJE DIRECTO) - Preparado para cientos de interruptores -->
+                <!-- 3. COMPONENTES COMPATIBLES (MONTAJE DIRECTO) -->
                 <div x-show="compatibleComponents.length > 0" class="bg-white p-6 rounded-xl border border-neutral-200 shadow-sm space-y-4">
                     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-neutral-200">
                         <div>
@@ -590,7 +448,6 @@
                         </template>
                     </div>
 
-                    <!-- Control de "Mostrar más componentes" para tableros con decenas o cientos de interruptores -->
                     <div x-show="filteredCompatibleComponents.length > compatibleLimit" class="pt-2 text-center">
                         <button
                             type="button"
@@ -954,7 +811,7 @@
 <script>
     function compatibilityExplorerApp() {
         return {
-            // Datos del servidor y conteo total
+            // Datos del catálogo
             totalCatalogCount: {{ total_products|default:0 }},
             initialProducts: [
                 {% for p in products %}
@@ -968,17 +825,10 @@
                 {% endfor %}
             ],
 
-            // Categoría activa y paginación en servidor
+            // Filtro de Categoría activo ('all', 'tableros', 'interruptores', 'accesorios')
             categoryFilter: 'all',
-            activeSeries: '',
-            showCatalogGrid: true,
-            categoryItems: [],
-            categoryTotal: 0,
-            categoryOffset: 0,
-            categoryLimit: 12,
-            loadingCategory: false,
 
-            // Omnibar / Buscador en tiempo real conectado al backend
+            // Buscador Inteligente en Servidor (por tokens / coincidencias)
             searchQuery: '',
             searchResults: [],
             searchOpen: false,
@@ -1002,7 +852,7 @@
             alternatives: [],
             alternativeFor: [],
 
-            // Sub-filtros y paginación dentro de las secciones con decenas de derivados
+            // Sub-filtros internos en las secciones de compatibilidad
             filterCompatibleQuery: '',
             compatibleLimit: 8,
 
@@ -1023,10 +873,6 @@
             },
 
             initApp() {
-                // Cargar iniciales
-                this.categoryItems = [...this.initialProducts.slice(0, this.categoryLimit)];
-                this.categoryTotal = this.totalCatalogCount;
-
                 // Cargar historial de localStorage
                 try {
                     const saved = localStorage.getItem('abv_recent_products');
@@ -1050,84 +896,28 @@
                 return 'Accesorio';
             },
 
-            async setCategoryFilter(cat) {
+            setCategoryFilter(cat) {
                 this.categoryFilter = cat;
-                this.activeSeries = '';
-                this.categoryOffset = 0;
-                this.loadingCategory = true;
-                this.showCatalogGrid = true;
-
-                try {
-                    const param = cat === 'all' ? '' : `&category=${encodeURIComponent(cat)}`;
-                    const res = await fetch(`/api/v1/catalog/products/?limit=${this.categoryLimit}&offset=0${param}`);
-                    if (res.ok) {
-                        const data = await res.json();
-                        this.categoryItems = data.items || [];
-                        this.categoryTotal = data.total || 0;
-                    }
-                } catch (e) {
-                    console.error('Error al filtrar por categoría:', e);
-                } finally {
-                    this.loadingCategory = false;
-                }
-            },
-
-            async setSeriesFilter(prefix) {
-                this.activeSeries = prefix;
-                this.categoryOffset = 0;
-                this.loadingCategory = true;
-                this.showCatalogGrid = true;
-
-                try {
-                    const searchParam = prefix ? `&search=${encodeURIComponent(prefix)}` : '';
-                    const catParam = this.categoryFilter === 'all' ? '' : `&category=${encodeURIComponent(this.categoryFilter)}`;
-                    const res = await fetch(`/api/v1/catalog/products/?limit=${this.categoryLimit}&offset=0${catParam}${searchParam}`);
-                    if (res.ok) {
-                        const data = await res.json();
-                        this.categoryItems = data.items || [];
-                        this.categoryTotal = data.total || 0;
-                    }
-                } catch (e) {
-                    console.error('Error al filtrar por serie:', e);
-                } finally {
-                    this.loadingCategory = false;
-                }
-            },
-
-            async loadMoreCategoryItems() {
-                this.categoryOffset += this.categoryLimit;
-                this.loadingCategory = true;
-
-                try {
-                    const param = this.categoryFilter === 'all' ? '' : `&category=${encodeURIComponent(this.categoryFilter)}`;
-                    const res = await fetch(`/api/v1/catalog/products/?limit=${this.categoryLimit}&offset=${this.categoryOffset}${param}`);
-                    if (res.ok) {
-                        const data = await res.json();
-                        this.categoryItems = [...this.categoryItems, ...(data.items || [])];
-                        this.categoryTotal = data.total || this.categoryTotal;
-                    }
-                } catch (e) {
-                    console.error('Error al paginar categoría:', e);
-                } finally {
-                    this.loadingCategory = false;
-                }
+                // Si el buscador está abierto o tiene texto, refrescar la consulta con la nueva categoría
+                this.onSearchInput();
             },
 
             openSearchDropdown() {
                 this.searchOpen = true;
-                if (this.searchQuery.trim().length >= 2) {
-                    this.onSearchInput();
-                } else if (this.recentProducts.length > 0) {
-                    this.searchResults = [...this.recentProducts];
-                } else {
-                    this.searchResults = [...this.initialProducts.slice(0, 8)];
-                }
+                this.onSearchInput();
             },
 
             async onSearchInput() {
                 const q = this.searchQuery.trim();
-                if (q.length < 2) {
-                    this.searchResults = this.recentProducts.length > 0 ? [...this.recentProducts] : [...this.initialProducts.slice(0, 8)];
+                const catParam = this.categoryFilter === 'all' ? '' : `&category=${encodeURIComponent(this.categoryFilter)}`;
+
+                // Si está vacío, mostrar recientes o destacados filtrados por la categoría seleccionada
+                if (q.length === 0) {
+                    let results = this.recentProducts.length > 0 ? [...this.recentProducts] : [...this.initialProducts];
+                    if (this.categoryFilter !== 'all') {
+                        results = results.filter(r => r.category === this.categoryFilter);
+                    }
+                    this.searchResults = results.slice(0, 8);
                     this.searchOpen = true;
                     return;
                 }
@@ -1137,7 +927,7 @@
                 this.selectedIndex = -1;
 
                 try {
-                    const res = await fetch(`/api/v1/catalog/products/?search=${encodeURIComponent(q)}&limit=20`);
+                    const res = await fetch(`/api/v1/catalog/products/?search=${encodeURIComponent(q)}${catParam}&limit=20`);
                     if (res.ok) {
                         const data = await res.json();
                         this.searchResults = data.items || [];
@@ -1151,8 +941,8 @@
 
             clearSearch() {
                 this.searchQuery = '';
-                this.searchResults = this.recentProducts.length > 0 ? [...this.recentProducts] : [...this.initialProducts.slice(0, 8)];
                 this.selectedIndex = -1;
+                this.onSearchInput();
             },
 
             navigateSearch(direction) {
@@ -1167,6 +957,10 @@
                     const item = this.searchResults[this.selectedIndex];
                     this.selectProductById(item.id);
                     this.searchOpen = false;
+                } else if (this.searchResults.length > 0) {
+                    // Seleccionar el primero si no hay selección manual
+                    this.selectProductById(this.searchResults[0].id);
+                    this.searchOpen = false;
                 }
             },
 
@@ -1175,7 +969,6 @@
                 if (found) {
                     this.selectProductById(found.id);
                 } else {
-                    // Buscar en el servidor
                     fetch(`/api/v1/catalog/products/?search=${encodeURIComponent(code)}&limit=1`)
                         .then(r => r.json())
                         .then(d => {
@@ -1197,7 +990,7 @@
                 this.loadingProduct = true;
                 this.searchOpen = false;
 
-                // Reset sub-filtros
+                // Reset sub-filtros de secciones
                 this.filterCompatibleQuery = '';
                 this.compatibleLimit = 8;
                 this.filterHostQuery = '';
@@ -1218,7 +1011,7 @@
                         this.alternatives = data.alternatives || [];
                         this.alternativeFor = data.alternative_for || [];
 
-                        // Guardar en recientes
+                        // Guardar en historial de recientes
                         this.addToRecentProducts(data.product);
                     } else {
                         this.showToast('No se pudieron obtener las compatibilidades del equipo.', 'fas fa-exclamation-circle text-red-500');
@@ -1240,7 +1033,7 @@
                     nombre_largo: product.nombre_largo,
                     category: product.category
                 });
-                if (this.recentProducts.length > 6) {
+                if (this.recentProducts.length > 5) {
                     this.recentProducts.pop();
                 }
                 try {
@@ -1248,7 +1041,7 @@
                 } catch (e) {}
             },
 
-            // Sub-filtros reactivos en memoria para listas de cientos de compatibles
+            // Sub-filtros reactivos en memoria para listas de compatibles
             get filteredCompatibleComponents() {
                 if (!this.filterCompatibleQuery || this.filterCompatibleQuery.trim() === '') {
                     return this.compatibleComponents;
