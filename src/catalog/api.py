@@ -1,8 +1,10 @@
 """API REST de catálogo y compatibilidades eléctricas con Django Ninja."""
 
+import hashlib
 from typing import Optional
 
-from django.http import Http404
+from django.core.cache import cache
+from django.http import Http404, HttpResponse
 from ninja import NinjaAPI, Router
 
 from catalog.schemas import (
@@ -31,16 +33,27 @@ catalog_router = Router(tags=["Catálogo y Compatibilidades"])
 @catalog_router.get("/products/", response=ProductListResponse)
 def list_products(
     request,
+    response: HttpResponse,
     search: Optional[str] = None,
     category: Optional[str] = None,
     limit: int = 50,
     offset: int = 0,
 ):
     """Lista productos activos con búsqueda y filtro por categoría."""
+    response["Cache-Control"] = "public, max-age=120, stale-while-revalidate=300"
+    version = cache.get("catalog:cache_version", 1)
+    search_hash = hashlib.md5(
+        f"{search or ''}:{category or ''}:{limit}:{offset}".encode("utf-8")
+    ).hexdigest()
+    cache_key = f"catalog:v{version}:search:{search_hash}"
+    cached_data = cache.get(cache_key)
+    if cached_data is not None:
+        return cached_data
+
     qs = list_active_products(search=search, category=category)
     total = qs.count()
     items = list(qs[offset : offset + limit])
-    return {
+    result = {
         "total": total,
         "items": [
             {
@@ -54,11 +67,14 @@ def list_products(
             for p in items
         ],
     }
+    cache.set(cache_key, result, timeout=300)
+    return result
 
 
 @catalog_router.get("/products/{int:product_id}/", response=ProductSchema)
-def get_product(request, product_id: int):
+def get_product(request, response: HttpResponse, product_id: int):
     """Obtiene el detalle de un producto por su ID."""
+    response["Cache-Control"] = "public, max-age=120, stale-while-revalidate=300"
     product = get_product_by_id(product_id)
     if not product:
         raise Http404(f"Producto con ID {product_id} no encontrado")
@@ -78,10 +94,12 @@ def get_product(request, product_id: int):
 )
 def list_compatibilities(
     request,
+    response: HttpResponse,
     product_id: int,
     relationship_type: Optional[str] = None,
 ):
     """Lista las compatibilidades y relaciones salientes de un producto."""
+    response["Cache-Control"] = "public, max-age=120, stale-while-revalidate=300"
     product = get_product_by_id(product_id)
     if not product:
         raise Http404(f"Producto con ID {product_id} no encontrado")
@@ -113,8 +131,9 @@ def list_compatibilities(
 
 
 @catalog_router.get("/products/{int:product_id}/tree/", response=ProductTreeResponse)
-def get_tree(request, product_id: int):
+def get_tree(request, response: HttpResponse, product_id: int):
     """Obtiene árbol de componentes compatibles, requeridos y alternativos."""
+    response["Cache-Control"] = "public, max-age=120, stale-while-revalidate=300"
     tree = get_product_compatibility_tree(product_id)
     if not tree:
         raise Http404(f"Producto con ID {product_id} no encontrado")

@@ -977,6 +977,10 @@
             // Historial de visitas en localStorage
             recentProducts: [],
 
+            // Caché en memoria del cliente para evitar fatiga en BD y saturación del servidor
+            clientTreeCache: {},
+            clientSearchCache: {},
+
             // Selección activa y árbol de compatibilidades
             selectedProductId: '',
             selectedProduct: null,
@@ -1051,6 +1055,7 @@
             async onSearchInput() {
                 const q = this.searchQuery.trim();
                 const catParam = this.categoryFilter === 'all' ? '' : `&category=${encodeURIComponent(this.categoryFilter)}`;
+                const cacheKey = `${q.toLowerCase()}__${this.categoryFilter}`;
 
                 if (q.length === 0) {
                     let results = this.recentProducts.length > 0 ? [...this.recentProducts] : [...this.initialProducts];
@@ -1062,6 +1067,14 @@
                     return;
                 }
 
+                // Si ya está en la caché en memoria del cliente, responder instantáneamente
+                if (this.clientSearchCache[cacheKey]) {
+                    this.searchResults = this.clientSearchCache[cacheKey];
+                    this.searchOpen = true;
+                    this.selectedIndex = -1;
+                    return;
+                }
+
                 this.searching = true;
                 this.searchOpen = true;
                 this.selectedIndex = -1;
@@ -1070,7 +1083,9 @@
                     const res = await fetch(`/api/v1/catalog/products/?search=${encodeURIComponent(q)}${catParam}&limit=20`);
                     if (res.ok) {
                         const data = await res.json();
-                        this.searchResults = data.items || [];
+                        const items = data.items || [];
+                        this.clientSearchCache[cacheKey] = items;
+                        this.searchResults = items;
                     }
                 } catch (e) {
                     console.error('Error al buscar en servidor:', e);
@@ -1104,18 +1119,25 @@
             },
 
             selectByShortCode(code) {
-                const found = this.initialProducts.find(p => p.nombre_corto.toUpperCase() === code.toUpperCase());
+                const upperCode = code.toUpperCase();
+                const found = this.initialProducts.find(p => p.nombre_corto.toUpperCase() === upperCode);
                 if (found) {
                     this.selectProductById(found.id);
-                } else {
-                    fetch(`/api/v1/catalog/products/?search=${encodeURIComponent(code)}&limit=1`)
-                        .then(r => r.json())
-                        .then(d => {
-                            if (d.items && d.items.length > 0) {
-                                this.selectProductById(d.items[0].id);
-                            }
-                        });
+                    return;
                 }
+                const cacheKey = `shortcode_${upperCode}`;
+                if (this.clientSearchCache[cacheKey]) {
+                    this.selectProductById(this.clientSearchCache[cacheKey]);
+                    return;
+                }
+                fetch(`/api/v1/catalog/products/?search=${encodeURIComponent(code)}&limit=1`)
+                    .then(r => r.json())
+                    .then(d => {
+                        if (d.items && d.items.length > 0) {
+                            this.clientSearchCache[cacheKey] = d.items[0].id;
+                            this.selectProductById(d.items[0].id);
+                        }
+                    });
             },
 
             async selectProductById(id) {
@@ -1126,7 +1148,6 @@
                 }
 
                 this.selectedProductId = id;
-                this.loadingProduct = true;
                 this.searchOpen = false;
 
                 // Reset sub-filtros de secciones
@@ -1137,10 +1158,29 @@
                 this.filterComplementsQuery = '';
                 this.complementsLimit = 6;
 
+                // Si ya está en la memoria caché del navegador, mostrar sin tocar el servidor/BD
+                if (this.clientTreeCache[id]) {
+                    const data = this.clientTreeCache[id];
+                    this.selectedProduct = data.product;
+                    this.hostEquipment = data.host_equipment || [];
+                    this.usedInEquipment = data.used_in_equipment || [];
+                    this.compatibleComponents = data.compatible_components || [];
+                    this.requiredAccessories = data.required_accessories || [];
+                    this.complements = data.complements || [];
+                    this.alternatives = data.alternatives || [];
+                    this.alternativeFor = data.alternative_for || [];
+                    this.addToRecentProducts(data.product);
+                    this.loadingProduct = false;
+                    return;
+                }
+
+                this.loadingProduct = true;
+
                 try {
                     const res = await fetch(`/api/v1/catalog/products/${id}/tree/`);
                     if (res.ok) {
                         const data = await res.json();
+                        this.clientTreeCache[id] = data;
                         this.selectedProduct = data.product;
                         this.hostEquipment = data.host_equipment || [];
                         this.usedInEquipment = data.used_in_equipment || [];

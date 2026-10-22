@@ -104,7 +104,29 @@ class CatalogAPITest(TestCase):
             f"/api/v1/catalog/products/{self.interruptor.id}/tree/"
         )
         self.assertEqual(response.status_code, 200)
+        self.assertIn("Cache-Control", response.headers)
         data = response.json()
         self.assertEqual(data["product"]["nombre_corto"], "QO-120")
         self.assertEqual(len(data["host_equipment"]), 1)
         self.assertEqual(data["host_equipment"][0]["nombre_corto"], "NQ-225-30P")
+
+    def test_api_search_caching(self):
+        """Verifica que búsquedas repetidas en la API se sirvan desde la caché."""
+        from django.core.cache import cache
+        from django.db import connection
+        from django.test.utils import CaptureQueriesContext
+
+        cache.clear()
+
+        # Primer request: ejecuta queries a la base de datos
+        with CaptureQueriesContext(connection) as ctx1:
+            resp1 = self.client.get("/api/v1/catalog/products/?search=tablero")
+        self.assertEqual(resp1.status_code, 200)
+        self.assertGreater(len(ctx1), 0)
+
+        # Segundo request idéntico: debe servirse de caché (0 consultas SQL a la BD)
+        with CaptureQueriesContext(connection) as ctx2:
+            resp2 = self.client.get("/api/v1/catalog/products/?search=tablero")
+        self.assertEqual(resp2.status_code, 200)
+        self.assertEqual(len(ctx2), 0)
+        self.assertEqual(resp1.json(), resp2.json())

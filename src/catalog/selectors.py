@@ -2,6 +2,7 @@
 
 from typing import Any, Optional
 
+from django.core.cache import cache
 from django.db.models import Case, IntegerField, Q, QuerySet, Value, When
 
 from catalog.enums import RelationshipType
@@ -110,13 +111,22 @@ def get_product_compatibilities(
 
 def get_product_compatibility_tree(
     product_id: int,
+    use_cache: bool = True,
 ) -> Optional[dict[str, Any]]:
-    """Resuelve en una sola consulta el grafo bidireccional del producto.
+    """Resuelve el grafo bidireccional del producto con soporte de caché.
 
     Obtiene componentes compatibles, accesorios obligatorios, complementos sugeridos,
     alternativas directas, y relaciones entrantes (equipos anfitriones donde se monta
     y equipos que requieren o complementan con este producto).
     """
+    version = cache.get("catalog:cache_version", 1)
+    cache_key = f"catalog:v{version}:tree:{product_id}"
+
+    if use_cache:
+        cached_tree = cache.get(cache_key)
+        if cached_tree is not None:
+            return cached_tree
+
     product = get_product_by_id(product_id)
     if not product:
         return None
@@ -182,7 +192,7 @@ def get_product_compatibility_tree(
             elif edge.relationship_type == RelationshipType.ALTERNATIVE_TO:
                 alternative_for.append(source_dict)
 
-    return {
+    result = {
         "product": {
             "id": product.id,
             "nombre_corto": product.nombre_corto,
@@ -199,3 +209,6 @@ def get_product_compatibility_tree(
         "used_in_equipment": used_in_equipment,
         "alternative_for": alternative_for,
     }
+    if use_cache:
+        cache.set(cache_key, result, timeout=1800)
+    return result

@@ -153,3 +153,34 @@ class CatalogSelectorsTest(TestCase):
         self.assertEqual(
             zapata_tree["used_in_equipment"][0]["nombre_corto"], "NQ-225-30P"
         )
+
+    def test_get_product_compatibility_tree_caching_and_invalidation(self):
+        """Verifica que el árbol use caché (0 SQL) y se invalide ante cambios."""
+        from django.core.cache import cache
+
+        cache.clear()
+
+        # 1. Primera consulta: toca la BD (máximo 2 consultas)
+        with CaptureQueriesContext(connection) as ctx1:
+            tree1 = get_product_compatibility_tree(self.tablero.id)
+        self.assertIsNotNone(tree1)
+        self.assertGreater(len(ctx1), 0)
+        self.assertLessEqual(len(ctx1), 2)
+
+        # 2. Segunda consulta: debe servirse desde la caché (0 consultas a BD)
+        with CaptureQueriesContext(connection) as ctx2:
+            tree2 = get_product_compatibility_tree(self.tablero.id)
+        self.assertEqual(len(ctx2), 0)
+        self.assertEqual(tree1, tree2)
+
+        # 3. Modificación del producto: dispara señal post_save e incrementa versión
+        self.tablero.nombre_largo = "Tablero NQ 225A Actualizado"
+        self.tablero.save()
+
+        # 4. Tercera consulta: al invalidarse, vuelve a consultar la BD
+        with CaptureQueriesContext(connection) as ctx3:
+            tree3 = get_product_compatibility_tree(self.tablero.id)
+        self.assertGreater(len(ctx3), 0)
+        self.assertEqual(
+            tree3["product"]["nombre_largo"], "Tablero NQ 225A Actualizado"
+        )

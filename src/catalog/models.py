@@ -35,6 +35,12 @@ class Product(models.Model):
         verbose_name = "Producto"
         verbose_name_plural = "Productos"
         ordering = ["nombre_corto"]
+        indexes = [
+            models.Index(
+                fields=["is_active", "nombre_corto"],
+                name="catalog_prod_active_name_idx",
+            ),
+        ]
 
     def __str__(self):
         return f"{self.nombre_corto} - {self.nombre_largo}"
@@ -159,6 +165,10 @@ class ProductCompatibility(models.Model):
             models.Index(
                 fields=["target", "relationship_type"],
                 name="catalog_compat_tgt_rel_idx",
+            ),
+            models.Index(
+                fields=["source", "target"],
+                name="catalog_compat_src_tgt_idx",
             ),
         ]
 
