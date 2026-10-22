@@ -67,7 +67,7 @@ fi
 echo ""
 echo "── Ítem 4: Datos Semilla y Pruebas Automatizadas ─────────────────"
 if uv run python manage.py test src.catalog.tests >/dev/null 2>&1; then
-  ok "Suite de 22 pruebas unitarias e integración de catálogo en verde"
+  ok "Suite completa de pruebas de catálogo y compatibilidades en verde"
 else
   bad "Las pruebas de catálogo fallaron (ejecute: uv run python manage.py test src.catalog.tests)"
 fi

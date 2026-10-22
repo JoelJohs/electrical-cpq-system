@@ -1,7 +1,6 @@
 from django.contrib.auth import get_user_model
 from django.test import Client, TestCase
 
-from catalog.enums import ProductType
 from catalog.models import Product
 
 User = get_user_model()
@@ -16,11 +15,9 @@ class CatalogAdminAccessTest(TestCase):
             password="admin_secure_password_123",
         )
         self.product = Product.objects.create(
-            sku="TAB-TEST-1",
-            name="Tablero de Prueba Admin",
-            slug="tab-test-1",
-            product_type=ProductType.BOARD,
-            specs={},
+            nombre_corto="TAB-TEST-1",
+            nombre_largo="Tablero de Prueba Admin",
+            descripcion="Descripción de prueba",
             is_active=True,
         )
 

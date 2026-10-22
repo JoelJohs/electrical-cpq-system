@@ -1,0 +1,46 @@
+from django.test import Client, TestCase
+
+from catalog.enums import RelationshipType
+from catalog.models import Product, ProductCompatibility
+
+
+class CatalogViewsTest(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.tablero = Product.objects.create(
+            nombre_corto="NQ-225",
+            nombre_largo="Tablero Alumbrado NQ 225A",
+            descripcion="Tablero base para pruebas",
+            is_active=True,
+        )
+        self.breaker = Product.objects.create(
+            nombre_corto="QO-120",
+            nombre_largo="Interruptor QO 1P 20A",
+            descripcion="Interruptor compatible",
+            is_active=True,
+        )
+        ProductCompatibility.objects.create(
+            source=self.tablero,
+            target=self.breaker,
+            relationship_type=RelationshipType.COMPATIBLE_WITH,
+            score=100,
+        )
+
+    def test_explorer_view_renders(self):
+        response = self.client.get("/")
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Asistente de Compatibilidad Eléctrica")
+        self.assertContains(response, "NQ-225")
+        self.assertContains(response, "ABV ELECTRIC SUPPLY")
+
+    def test_product_tree_json_view(self):
+        response = self.client.get(f"/api/products/{self.tablero.id}/tree/")
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(data["product"]["nombre_corto"], "NQ-225")
+        self.assertEqual(len(data["compatible_components"]), 1)
+        self.assertEqual(data["compatible_components"][0]["nombre_corto"], "QO-120")
+
+    def test_product_tree_json_404(self):
+        response = self.client.get("/api/products/999999/tree/")
+        self.assertEqual(response.status_code, 404)

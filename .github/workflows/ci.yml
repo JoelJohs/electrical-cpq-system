@@ -39,4 +39,4 @@ jobs:
         env:
           SECRET_KEY: "ci-insecure-test-key-only"
           DEBUG: "False"
-        run: uv run python manage.py test tests catalog quotes
+        run: uv run python manage.py test src.catalog.tests tests

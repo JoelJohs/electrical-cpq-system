@@ -15,7 +15,7 @@
 | **Fase 1**<br>*(Mes 1)* | **Alineación, Alcance y Matrices** | Matriz de compatibilidad técnica, flujos comerciales/técnicos y PRD. | 🟡 En Curso | PRD de 1 página completado; pendiente validación de matrices y wireframes. |
 | **Fase 2**<br>*(Mes 2)* | **Configuración Inicial y Repositorio** | Repositorio Git, CI/CD, linters Ruff, pre-commit y plantillas VPS. | 🟢 Operativo | `./scripts/check_phase2.sh --local` (15 PASS · 0 FAIL). Guía en `docs/deployment-vps.md`. |
 | **Fase 3**<br>*(Mes 2-3)* | **Arquitectura Base y Grafo de Datos** | Modelado en grafo dirigido SQL, selectores O(1), API REST Ninja, Docker Postgres 17. | 🟢 Operativo | `./scripts/check_phase3.sh` (9 PASS · 0 FAIL). 25 tests en verde. Guía en `docs/catalog-architecture.md`. |
-| **Fase 4**<br>*(Mes 3-4)* | **Desarrollo del Core (Happy Path)** | Motor de cotización (`Quote`/`QuoteItem`), validación física en tiempo real y Frontend doble perfil. | 🟢 Operativo | `./scripts/check_phase4.sh` (12 PASS · 0 FAIL). 43 tests en verde. Swagger en `/api/docs` y UI en `/quotes/`. |
+| **Fase 4**<br>*(Mes 3-4)* | **Desarrollo del Core (Happy Path)** | Asistente de compatibilidad en vivo, grafo relacional directo y lista de materiales (BOM) en memoria. | 🟢 Operativo | `./scripts/check_phase3.sh` (9 PASS · 0 FAIL). 30 tests en verde. Swagger en `/api/docs` y UI en `/`. |
 | **Fase 5**<br>*(Mes 5)* | **QA, Integración y Casos Reales** | Validación funcional con **30 casos reales de cotización**, 0% errores de incompatibilidad. | ⚪ **Siguiente Paso** | Batería de pruebas con área de ingeniería y ejecutivos comerciales. |
 | **Fase 6**<br>*(Mes 6)* | **Despliegue Staging y Cierre** | Despliegue en VPS Ubuntu 24.04 LTS, capacitación de usuarios y reporte final de residencia. | ⚪ Pendiente | Despliegue funcional, manuales de usuario y entrega acreditada. |
 
@@ -96,46 +96,28 @@ Linters: `uv run ruff check . && uv run ruff format --check .` → **Verde (0 er
 ---
 
 ### Fase 4: Desarrollo del Core (Happy Path) (Mes 3 - Mes 4) 🎯 Operativo ✅
-*Objetivo: Construir el motor de cotización en tiempo real y las interfaces interactivas para Ventas e Integradores.*
+*Objetivo: Asistente interactivo de compatibilidad entre componentes y despiece de materiales en tiempo real (sin persistencia de cotizaciones en BD).*
 
-Verificación local: `./scripts/check_phase4.sh` → **12 PASS · 0 FAIL (EN OPERACIÓN ✅)**.  
-Suite de pruebas de cotizaciones: `uv run python manage.py test quotes` → **43 PASS · 0 FAIL (0.7s)**.  
+Verificación local: `./scripts/check_phase3.sh` → **9 PASS · 0 FAIL (EN OPERACIÓN ✅)**.  
+Suite de pruebas: `uv run python manage.py test src.catalog.tests tests` → **30 PASS · 0 FAIL**.  
 Linters: `uv run ruff check . && uv run ruff format --check .` → **Verde (0 errores)**.
 
 **Entregables Completados:**
-- [x] **Lógica de Negocio y Motor de Cotización (Backend)**:
-  - Modelado de entidades de cotización (`Quote`, `QuoteItem`, `QuoteStatus`) con generación automática de folios (`COT-YYYY-NNNN`) y bloqueo por estado (`src/quotes/models.py`).
-  - Implementación de servicios transaccionales atómicos (`create_quote`, `add_item_to_quote`, `update_quote_item`, `remove_quote_item`, `transition_quote_status` en `src/quotes/services.py`).
-  - Motor algorítmico de validación electro-mecánica en tiempo real (`src/quotes/rules.py`):
-    - Control estricto de capacidad de ranuras/polos ($\sum(\text{polos} \times \text{cant}) \le \text{espacios}$).
-    - Verificación de corriente nominal de barras vs amperaje de interruptores derivados.
-    - Cierre transitivo de accesorios mandatorios (`REQUIRES`) con detección de ciclos y prevención de recursión infinita.
-    - Respuestas estructuradas con códigos tipados (`INSUFFICIENT_SPACE`, `AMPERAGE_EXCEEDED`, `MISSING_REQUIRED_ACCESSORY`, `INCOMPATIBLE_DERIVATIVE`).
-  - Selector de Lista de Materiales (`get_quote_bom` en `src/quotes/selectors.py`) con agregación determinista por SKU y conteo total de piezas físicas (sin precios ni importes monetarios).
-- [x] **API REST del Configurador (Django Ninja)**:
-  - Esquemas tipados con Pydantic v2 en `src/quotes/schemas.py`.
-  - Endpoints REST documentados en Swagger montados en `/api/v1/quotes/` (`src/quotes/api.py`):
-    - `POST /api/v1/quotes/` (Crear cotización o ensamble en borrador).
-    - `GET /api/v1/quotes/` y `GET /api/v1/quotes/{id}/` (Consulta y detalle).
-    - `POST /api/v1/quotes/{id}/items/`, `PATCH`, `DELETE` (Gestión transaccional de partidas con retorno automático a DRAFT si estaba validada).
-    - `POST /api/v1/quotes/{id}/validate/` (Validación técnica en caliente).
-    - `GET /api/v1/quotes/{id}/bom/` (Generación de BOM en < 2s).
-    - `POST /api/v1/quotes/{id}/transition/` (Máquina de estados protegida: DRAFT → VALIDATED → SENT → ACCEPTED).
-- [x] **Desarrollo de Interfaces de Usuario (Frontend)**:
-  - Layout corporativo (`src/quotes/templates/quotes/base_quotes.html`) con Tailwind CSS, Alpine.js, HTMX y logotipo vectorial de ABV Electric Supply conforme a `DESIGN.md`.
-  - **Módulo 1: Vista Rápida para Ventas (`/quotes/new/`)**:
-    - Catálogo reactivo con filtrado instantáneo por texto, SKU y tipo de producto.
-    - Panel lateral de resumen de partidas y recomendaciones automáticas de venta cruzada (`COMPLEMENT_OF`).
-  - **Módulo 2: Configurador de Tableros para Integradores (`/quotes/{id}/configurator/`)**:
-    - Ficha de ingeniería del tablero anfitrión con indicador dinámico de espacios/polos (barra reactiva tricolor: Verde <80%, Amarillo 80-100%, Rojo >100%).
-    - Esquema de chasis físico 2D (polos impares a la izquierda, polos pares a la derecha).
-    - Alertas visuales explicativas inmediatas ante conflictos técnicos y botón de validación en tiempo real.
-  - **Módulo 3: Vista de Taller y Resumen de Despiece BOM (`/quotes/{id}/bom/`)**:
-    - Despiece consolidado de almacén y asignación física por circuito formateado para taller e impresión (`@media print`).
-- [x] **Gobernanza y Panel de Administración**:
-  - `QuoteAdmin` y `QuoteItemInline` configurados en `src/quotes/admin.py`.
-- [x] **Script de Verificación Automatizada**:
-  - `scripts/check_phase4.sh` validando de extremo a extremo los 6 bloques de la fase.
+- [x] **Modelo Simplificado de Datos (Solo 2 Tablas en BD)**:
+  - `Product`: `id` numérico convencional, `nombre_corto`, `nombre_largo`, `descripcion`, `is_active` (`src/catalog/models.py`).
+  - `ProductCompatibility`: Grafo relacional dirigido (`COMPATIBLE_WITH`, `REQUIRES`, `COMPLEMENT_OF`, `ALTERNATIVE_TO`).
+  - Eliminación de tablas redundantes de cotizaciones (`Quote`/`QuoteItem`), manteniendo la base de datos limpia y sin almacenar cotizaciones.
+- [x] **API REST de Catálogo y Compatibilidades (Django Ninja)**:
+  - Documentación Swagger interactiva en `/api/docs`.
+  - Endpoints `/api/v1/catalog/products/`, `/api/v1/catalog/products/{id}/`, `/api/v1/catalog/products/{id}/compatibilities/`, `/api/v1/catalog/products/{id}/tree/`.
+- [x] **Asistente Web para Clientes e Integradores (`/`)**:
+  - Interfaz de autoservicio para consulta y recomendación directa con Tailwind CSS y Alpine.js.
+  - Al seleccionar un equipo base, muestra instantáneamente sus componentes compatibles, accesorios obligatorios (`REQUIRES`), complementos sugeridos (`COMPLEMENT_OF`) y alternativas de reemplazo (`ALTERNATIVE_TO`).
+  - Lista de Materiales (BOM) interactiva gestionada puramente en memoria del navegador (sesión en vivo).
+  - Función de impresión formateada para taller y mostrador (`window.print()`).
+  - Cero basura o cotizaciones guardadas en la base de datos.
+- [x] **Panel de Administración**:
+  - `ProductAdmin` e inlines `ProductCompatibilityInline` configurados en `src/catalog/admin.py`.
 
 ---
 

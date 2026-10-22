@@ -1,3 +1,5 @@
+"""Panel de administración para el catálogo eléctrico y compatibilidades."""
+
 from django.contrib import admin
 
 from catalog.models import Product, ProductCompatibility
@@ -10,35 +12,33 @@ class ProductCompatibilityInline(admin.TabularInline):
     autocomplete_fields = ["target"]
     fields = ["target", "relationship_type", "score", "notes"]
     verbose_name = "Compatibilidad saliente"
-    verbose_name_plural = "Compatibilidades entre Productos (Componentes / Accesorios)"
+    verbose_name_plural = "Compatibilidades entre Productos"
 
 
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
     list_display = [
-        "sku",
-        "name",
-        "product_type",
+        "id",
+        "nombre_corto",
+        "nombre_largo",
         "is_active",
-        "created_at",
         "updated_at",
     ]
-    list_filter = ["product_type", "is_active"]
-    search_fields = ["sku", "name", "description"]
-    prepopulated_fields = {"slug": ("sku",)}
+    list_filter = ["is_active"]
+    search_fields = ["nombre_corto", "nombre_largo", "descripcion"]
     readonly_fields = ["created_at", "updated_at"]
     inlines = [ProductCompatibilityInline]
     fieldsets = (
         (
-            "Identificación Principal",
+            "Identificación del Producto",
             {
-                "fields": ("sku", "name", "slug", "product_type", "is_active"),
+                "fields": ("nombre_corto", "nombre_largo", "is_active"),
             },
         ),
         (
-            "Detalle Técnico",
+            "Descripción y Ficha Técnica",
             {
-                "fields": ("description", "specs"),
+                "fields": ("descripcion",),
             },
         ),
         (
@@ -62,9 +62,9 @@ class ProductCompatibilityAdmin(admin.ModelAdmin):
     ]
     list_filter = ["relationship_type"]
     search_fields = [
-        "source__sku",
-        "source__name",
-        "target__sku",
-        "target__name",
+        "source__nombre_corto",
+        "source__nombre_largo",
+        "target__nombre_corto",
+        "target__nombre_largo",
     ]
     autocomplete_fields = ["source", "target"]

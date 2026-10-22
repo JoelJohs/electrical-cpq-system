@@ -1,40 +1,46 @@
+"""Modelos del catálogo y grafo de compatibilidades eléctricas."""
+
 from django.core.exceptions import ValidationError
 from django.db import models
 
-from catalog.enums import ProductType, RelationshipType
+from catalog.enums import RelationshipType
 
 
 class Product(models.Model):
-    sku = models.CharField(max_length=64, unique=True, db_index=True)
-    name = models.CharField(max_length=255)
-    slug = models.SlugField(max_length=255, unique=True)
-    product_type = models.CharField(
-        max_length=20,
-        choices=ProductType.choices,
+    """Producto o componente del catálogo técnico."""
+
+    nombre_corto = models.CharField(
+        max_length=100,
         db_index=True,
+        help_text="Código o identificador corto (ej. NQ-225, QO-120)",
     )
-    description = models.TextField(blank=True, default="")
-    specs = models.JSONField(
-        default=dict,
+    nombre_largo = models.CharField(
+        max_length=255,
+        help_text="Nombre descriptivo completo comercial",
+    )
+    descripcion = models.TextField(
         blank=True,
-        help_text="Atributos técnicos (amperaje, polos, montaje, etc.)",
+        default="",
+        help_text="Descripción o especificaciones técnicas del producto",
     )
-    is_active = models.BooleanField(default=True, db_index=True)
+    is_active = models.BooleanField(
+        default=True,
+        db_index=True,
+        help_text="Determina si el producto está vigente en catálogo",
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         verbose_name = "Producto"
         verbose_name_plural = "Productos"
-        ordering = ["sku"]
+        ordering = ["nombre_corto"]
 
     def __str__(self):
-        return f"[{self.get_product_type_display()}] {self.name} ({self.sku})"
+        return f"{self.nombre_corto} - {self.nombre_largo}"
 
-    def get_compatible_components(self):
-        """
-        Retorna componentes principales (ej. interruptores) montables en este producto.
-        """
+    def get_compatible_items(self):
+        """Retorna productos compatibles salientes de este producto."""
         return (
             Product.objects.filter(
                 inward_compatibilities__source=self,
@@ -42,11 +48,23 @@ class Product(models.Model):
                 is_active=True,
             )
             .distinct()
-            .order_by("-inward_compatibilities__score", "name")
+            .order_by("-inward_compatibilities__score", "nombre_corto")
         )
 
-    def get_accessories(self):
-        """Retorna accesorios o complementos directos de este producto."""
+    def get_required_accessories(self):
+        """Retorna accesorios mandatorios que este producto requiere."""
+        return (
+            Product.objects.filter(
+                inward_compatibilities__source=self,
+                inward_compatibilities__relationship_type=RelationshipType.REQUIRES,
+                is_active=True,
+            )
+            .distinct()
+            .order_by("-inward_compatibilities__score", "nombre_corto")
+        )
+
+    def get_complements(self):
+        """Retorna accesorios sugeridos o complementos no obligatorios."""
         return (
             Product.objects.filter(
                 inward_compatibilities__source=self,
@@ -54,22 +72,36 @@ class Product(models.Model):
                 is_active=True,
             )
             .distinct()
-            .order_by("-inward_compatibilities__score", "name")
+            .order_by("-inward_compatibilities__score", "nombre_corto")
+        )
+
+    def get_alternatives(self):
+        """Retorna sustitutos o reemplazos directos."""
+        return (
+            Product.objects.filter(
+                inward_compatibilities__source=self,
+                inward_compatibilities__relationship_type=RelationshipType.ALTERNATIVE_TO,
+                is_active=True,
+            )
+            .distinct()
+            .order_by("-inward_compatibilities__score", "nombre_corto")
         )
 
 
 class ProductCompatibility(models.Model):
+    """Arista dirigida de compatibilidad entre dos productos."""
+
     source = models.ForeignKey(
         Product,
         on_delete=models.CASCADE,
         related_name="outward_compatibilities",
-        help_text="El producto anfitrión o principal (ej. Tablero o Interruptor)",
+        help_text="Producto anfitrión o base",
     )
     target = models.ForeignKey(
         Product,
         on_delete=models.CASCADE,
         related_name="inward_compatibilities",
-        help_text="El producto compatible o accesorio a instalar",
+        help_text="Producto compatible, accesorio o alternativa",
     )
     relationship_type = models.CharField(
         max_length=30,
@@ -79,7 +111,7 @@ class ProductCompatibility(models.Model):
     )
     score = models.PositiveIntegerField(
         default=100,
-        help_text="Prioridad de recomendación (mayor valor = aparece primero)",
+        help_text="Prioridad de recomendación (mayor valor = mayor relevancia)",
     )
     notes = models.CharField(max_length=255, blank=True, default="")
 
@@ -87,12 +119,10 @@ class ProductCompatibility(models.Model):
         verbose_name = "Compatibilidad entre Productos"
         verbose_name_plural = "Compatibilidades entre Productos"
         constraints = [
-            # Evita duplicar exactamente la misma relación entre dos productos
             models.UniqueConstraint(
                 fields=["source", "target", "relationship_type"],
                 name="unique_source_target_rel_type",
             ),
-            # Evita que un producto se relacione consigo mismo
             models.CheckConstraint(
                 condition=~models.Q(source=models.F("target")),
                 name="prevent_self_relation",
@@ -113,7 +143,10 @@ class ProductCompatibility(models.Model):
         ]
 
     def __str__(self):
-        return f"{self.source.sku} ──[{self.relationship_type}]──▶ {self.target.sku}"
+        return (
+            f"{self.source.nombre_corto} ──[{self.relationship_type}]──▶ "
+            f"{self.target.nombre_corto}"
+        )
 
     def save(self, *args, **kwargs):
         self.clean()

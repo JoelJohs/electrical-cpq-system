@@ -1,72 +1,39 @@
-from typing import Any, Dict, List, Optional
+"""Esquemas Pydantic v2 para la API REST del catálogo de compatibilidades."""
 
 from ninja import Schema
 
 
 class ProductSchema(Schema):
     id: int
-    sku: str
-    name: str
-    slug: str
-    product_type: str
-    description: Optional[str] = ""
-    specs: Dict[str, Any] = {}
-    is_active: bool
+    nombre_corto: str
+    nombre_largo: str
+    descripcion: str = ""
+    is_active: bool = True
 
 
 class ProductListResponse(Schema):
-    count: int
-    items: List[ProductSchema]
+    total: int
+    items: list[ProductSchema]
 
 
 class CompatibilityEdgeSchema(Schema):
-    target_sku: str
-    target_name: str
-    target_type: str
+    id: int
+    target_id: int
+    target_nombre_corto: str
+    target_nombre_largo: str
     relationship_type: str
     score: int
-    notes: Optional[str] = ""
-    specs: Dict[str, Any] = {}
-
-
-class ProductHeaderSchema(Schema):
-    sku: str
-    name: str
+    notes: str = ""
 
 
 class ProductCompatibilitiesResponse(Schema):
-    product: ProductHeaderSchema
-    compatibilities: List[CompatibilityEdgeSchema]
-
-
-class NestedAccessorySchema(Schema):
-    id: int
-    sku: str
-    name: str
-    product_type: str
-    relationship_type: str
-    score: int
-    notes: Optional[str] = ""
-    specs: Dict[str, Any] = {}
-
-
-class NestedComponentSchema(Schema):
-    id: int
-    sku: str
-    name: str
-    product_type: str
-    relationship_type: str
-    score: int
-    notes: Optional[str] = ""
-    specs: Dict[str, Any] = {}
-    accessories: List[NestedAccessorySchema] = []
+    product: ProductSchema
+    compatibilities: list[CompatibilityEdgeSchema]
 
 
 class ProductTreeResponse(Schema):
-    id: int
-    sku: str
-    name: str
-    product_type: str
-    specs: Dict[str, Any] = {}
-    compatible_components: List[NestedComponentSchema] = []
-    direct_accessories: List[NestedAccessorySchema] = []
+    product: ProductSchema
+    compatible_components: list[ProductSchema]
+    required_accessories: list[ProductSchema]
+    complements: list[ProductSchema]
+    alternatives: list[ProductSchema]

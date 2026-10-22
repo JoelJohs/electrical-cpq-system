@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}ABV ELECTRIC SUPPLY - CPQ Técnico{% endblock %}</title>
+    <title>{% block title %}ABV ELECTRIC SUPPLY - Consulta de Compatibilidades{% endblock %}</title>
 
-    <!-- Tailwind CSS CDN con configuración corporativa -->
+    <!-- Tailwind CSS con paleta institucional -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -39,9 +39,6 @@
     <!-- Alpine.js -->
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.8/dist/cdn.min.js"></script>
 
-    <!-- HTMX -->
-    <script src="https://unpkg.com/htmx.org@2.0.4"></script>
-
     {% block extra_head %}{% endblock %}
 </head>
 <body class="h-full flex flex-col text-[#1E1E1E] antialiased">
@@ -51,27 +48,26 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex items-center justify-between h-16">
                 <div class="flex items-center space-x-4">
-                    <a href="/quotes/" class="flex items-center space-x-3 text-white no-underline">
-                        <!-- Logo ABV Oficial Vectorial -->
+                    <a href="/" class="flex items-center space-x-3 text-white no-underline">
                         <div class="bg-white rounded px-2 py-1 flex items-center justify-center">
                             <span class="font-extrabold text-lg tracking-wider text-[#A2171B]">ABV</span>
                             <span class="font-bold text-xs tracking-tight text-neutral-800 ml-1">ELECTRIC</span>
                         </div>
                         <span class="hidden md:inline font-bold text-sm tracking-widest text-neutral-300 border-l border-neutral-600 pl-3">
-                            CPQ TÉCNICO & TABLEROS
+                            COMPATIBILIDADES ELÉCTRICAS
                         </span>
                     </a>
                 </div>
 
                 <div class="flex items-center space-x-3">
-                    <a href="/quotes/" class="px-3 py-2 rounded-md text-sm font-medium text-neutral-300 hover:text-white hover:bg-neutral-800 transition">
-                        <i class="fas fa-list-check mr-1.5 text-abv-blue"></i> Cotizaciones
-                    </a>
-                    <a href="/quotes/new/" class="px-3 py-2 rounded-md text-sm font-medium bg-abv-blue hover:bg-abv-blue-hover text-white transition shadow-sm">
-                        <i class="fas fa-plus mr-1.5"></i> Nueva Cotización
+                    <a href="/" class="px-3 py-2 rounded-md text-sm font-medium text-white bg-neutral-800 transition">
+                        <i class="fas fa-microchip mr-1.5 text-abv-blue"></i> Consulta de Compatibilidad
                     </a>
                     <a href="/api/docs" target="_blank" class="px-2.5 py-1.5 rounded-md text-xs font-mono text-neutral-400 hover:text-white hover:bg-neutral-800 transition border border-neutral-700">
-                        <i class="fas fa-code mr-1"></i> Swagger API
+                        <i class="fas fa-code mr-1"></i> API REST
+                    </a>
+                    <a href="/admin/" target="_blank" class="px-2.5 py-1.5 rounded-md text-xs font-mono text-neutral-400 hover:text-white hover:bg-neutral-800 transition border border-neutral-700">
+                        <i class="fas fa-shield-halved mr-1"></i> Admin
                     </a>
                 </div>
             </div>
@@ -83,11 +79,11 @@
         {% block content %}{% endblock %}
     </main>
 
-    <!-- Footer corporativo -->
+    <!-- Footer -->
     <footer class="bg-[#1E1E1E] text-neutral-400 border-t border-neutral-800 py-4 mt-auto">
         <div class="max-w-7xl mx-auto px-4 text-center text-xs">
-            <p class="font-medium text-neutral-300">ABV ELECTRIC SUPPLY &mdash; Plataforma de Configuración Técnica y Despiece BOM</p>
-            <p class="text-neutral-500 mt-1">Cero errores de montaje físico &bull; Validación paramétrica en tiempo real &bull; Cero precios comerciales</p>
+            <p class="font-medium text-neutral-300">ABV ELECTRIC SUPPLY &mdash; Asistente de Compatibilidad entre Componentes y Tableros</p>
+            <p class="text-neutral-500 mt-1">Herramienta técnica de autoservicio &bull; Sin cotizaciones guardadas &bull; Despiece en memoria</p>
         </div>
     </footer>
 

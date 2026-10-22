@@ -53,7 +53,6 @@ INSTALLED_APPS = [
     "corsheaders",
     # Local apps
     "catalog.apps.CatalogConfig",
-    "quotes.apps.QuotesConfig",
 ]
 
 MIDDLEWARE = [

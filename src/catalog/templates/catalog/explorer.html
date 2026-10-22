@@ -1,0 +1,366 @@
+{% extends "catalog/base.html" %}
+
+{% block title %}Consulta de Compatibilidades - ABV ELECTRIC SUPPLY{% endblock %}
+
+{% block extra_head %}
+<style>
+    @media print {
+        nav, footer, .no-print {
+            display: none !important;
+        }
+        body {
+            background-color: #ffffff !important;
+            color: #000000 !important;
+        }
+        .print-area {
+            border: none !important;
+            box-shadow: none !important;
+            padding: 0 !important;
+            width: 100% !important;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div x-data="compatibilityExplorerApp()" class="space-y-6">
+
+    <!-- Encabezado -->
+    <div class="no-print bg-white p-6 rounded-xl border border-abv-border shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+            <h1 class="text-2xl font-extrabold text-abv-dark tracking-tight">Asistente de Compatibilidad Eléctrica</h1>
+            <p class="text-sm text-neutral-500 mt-1">
+                Selecciona un equipo base (tablero o interruptor) para explorar sus componentes compatibles, accesorios y alternativas.
+            </p>
+        </div>
+        <div class="flex items-center gap-2">
+            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-blue-50 text-abv-blue border border-blue-200">
+                <i class="fas fa-bolt mr-1.5"></i> Consulta Técnica Directa
+            </span>
+        </div>
+    </div>
+
+    <!-- Layout 2 Columnas: Explorador (65%) / Lista Temporal en Memoria (35%) -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+        <!-- Columna Principal: Selección y Compatibilidades (8 cols) -->
+        <div class="no-print lg:col-span-8 space-y-6">
+
+            <!-- Selector de Producto Base -->
+            <div class="bg-white p-5 rounded-xl border border-abv-border shadow-sm space-y-3">
+                <label class="block text-xs font-bold uppercase tracking-wider text-neutral-700">
+                    <i class="fas fa-search mr-1.5 text-abv-blue"></i> Seleccionar Producto Base / Anfitrión
+                </label>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <select
+                        x-model="selectedProductId"
+                        @change="loadProductTree()"
+                        class="w-full px-3 py-2 text-sm border border-abv-border rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-abv-blue font-semibold"
+                    >
+                        <option value="">-- Elige un producto base del catálogo --</option>
+                        {% for p in products %}
+                        <option value="{{ p.id }}">{{ p.nombre_corto }} &bull; {{ p.nombre_largo }}</option>
+                        {% endfor %}
+                    </select>
+
+                    <button
+                        type="button"
+                        x-show="selectedProduct"
+                        @click="addToList(selectedProduct.id, selectedProduct.nombre_corto, selectedProduct.nombre_largo, 1, 'Equipo Base')"
+                        class="w-full py-2 px-3 bg-abv-dark hover:bg-abv-dark-hover text-white text-xs font-bold rounded-lg shadow transition flex items-center justify-center gap-2"
+                    >
+                        <i class="fas fa-plus text-abv-blue"></i> Agregar Equipo Base a Lista
+                    </button>
+                </div>
+            </div>
+
+            <!-- Ficha del Producto Seleccionado -->
+            <div x-show="selectedProduct" class="bg-white p-5 rounded-xl border border-abv-border shadow-sm space-y-2">
+                <div class="flex items-start justify-between">
+                    <div>
+                        <span class="font-mono text-xs font-bold text-abv-blue bg-blue-50 px-2 py-0.5 rounded border border-blue-200" x-text="`ID: ${selectedProduct?.id} | ${selectedProduct?.nombre_corto}`"></span>
+                        <h2 class="text-lg font-bold text-abv-dark mt-1" x-text="selectedProduct?.nombre_largo"></h2>
+                    </div>
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-800">
+                        Activo
+                    </span>
+                </div>
+                <p class="text-xs text-neutral-600" x-text="selectedProduct?.descripcion || 'Sin descripción técnica adicional.'"></p>
+            </div>
+
+            <!-- Sección de Compatibilidades y Accesorios -->
+            <div x-show="selectedProduct" class="space-y-6">
+
+                <!-- 1. Componentes Compatibles (COMPATIBLE_WITH) -->
+                <div class="bg-white p-5 rounded-xl border border-abv-border shadow-sm space-y-4">
+                    <div class="flex items-center justify-between pb-2 border-b border-neutral-200">
+                        <h3 class="text-sm font-bold uppercase tracking-wider text-abv-dark flex items-center">
+                            <i class="fas fa-check-circle text-abv-green mr-2"></i> Componentes Compatibles (Montaje Directo)
+                        </h3>
+                        <span class="text-xs font-mono font-bold text-neutral-500" x-text="`${compatibleComponents.length} opción(es)`"></span>
+                    </div>
+
+                    <div x-show="compatibleComponents.length === 0" class="py-4 text-center text-xs text-neutral-400">
+                        No hay componentes derivados registrados para este equipo.
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <template x-for="comp in compatibleComponents" :key="comp.id">
+                            <div class="p-3 bg-neutral-50 rounded-lg border border-neutral-200 flex flex-col justify-between space-y-2 hover:border-abv-blue transition">
+                                <div>
+                                    <div class="flex items-center justify-between">
+                                        <span class="font-mono text-xs font-bold text-abv-dark" x-text="comp.nombre_corto"></span>
+                                        <span class="text-[10px] font-mono text-neutral-400" x-text="`ID: ${comp.id}`"></span>
+                                    </div>
+                                    <div class="text-xs font-medium text-neutral-800 mt-1" x-text="comp.nombre_largo"></div>
+                                    <p class="text-[11px] text-neutral-500 mt-0.5 line-clamp-2" x-text="comp.descripcion"></p>
+                                </div>
+                                <button
+                                    type="button"
+                                    @click="addToList(comp.id, comp.nombre_corto, comp.nombre_largo, 1, 'Componente Compatible')"
+                                    class="w-full py-1.5 px-3 bg-white hover:bg-abv-blue hover:text-white text-abv-blue text-xs font-bold rounded border border-abv-blue transition flex items-center justify-center gap-1.5"
+                                >
+                                    <i class="fas fa-plus"></i> Agregar
+                                </button>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+
+                <!-- 2. Accesorios Obligatorios (REQUIRES) -->
+                <div x-show="requiredAccessories.length > 0" class="bg-red-50 p-5 rounded-xl border border-red-200 shadow-sm space-y-3">
+                    <div class="flex items-center justify-between pb-2 border-b border-red-200">
+                        <h3 class="text-sm font-bold uppercase tracking-wider text-red-900 flex items-center">
+                            <i class="fas fa-triangle-exclamation text-red-600 mr-2"></i> Accesorios Mandatorios Requeridos (REQUIRES)
+                        </h3>
+                        <span class="text-xs font-mono font-bold text-red-700" x-text="`${requiredAccessories.length} obligatorio(s)`"></span>
+                    </div>
+
+                    <div class="space-y-2">
+                        <template x-for="req in requiredAccessories" :key="req.id">
+                            <div class="p-3 bg-white rounded-lg border border-red-200 flex items-center justify-between">
+                                <div>
+                                    <span class="font-mono text-xs font-bold text-red-800" x-text="req.nombre_corto"></span>
+                                    <div class="text-xs font-semibold text-neutral-800" x-text="req.nombre_largo"></div>
+                                </div>
+                                <button
+                                    type="button"
+                                    @click="addToList(req.id, req.nombre_corto, req.nombre_largo, 1, 'Accesorio Obligatorio')"
+                                    class="py-1 px-3 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded shadow-sm transition"
+                                >
+                                    <i class="fas fa-plus mr-1"></i> Incluir Requerido
+                                </button>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+
+                <!-- 3. Complementos Sugeridos (COMPLEMENT_OF) -->
+                <div x-show="complements.length > 0" class="bg-blue-50/60 p-5 rounded-xl border border-blue-200 shadow-sm space-y-3">
+                    <div class="flex items-center justify-between pb-2 border-b border-blue-200">
+                        <h3 class="text-sm font-bold uppercase tracking-wider text-blue-900 flex items-center">
+                            <i class="fas fa-lightbulb text-yellow-500 mr-2"></i> Accesorios Complementarios Recomendados (Venta Cruzada)
+                        </h3>
+                        <span class="text-xs font-mono font-bold text-blue-700" x-text="`${complements.length} sugerencia(s)`"></span>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <template x-for="sug in complements" :key="sug.id">
+                            <div class="p-3 bg-white rounded-lg border border-blue-100 flex flex-col justify-between space-y-2">
+                                <div>
+                                    <span class="font-mono text-xs font-bold text-abv-blue" x-text="sug.nombre_corto"></span>
+                                    <div class="text-xs font-medium text-neutral-800" x-text="sug.nombre_largo"></div>
+                                </div>
+                                <button
+                                    type="button"
+                                    @click="addToList(sug.id, sug.nombre_corto, sug.nombre_largo, 1, 'Accesorio Complementario')"
+                                    class="w-full py-1 px-2.5 bg-neutral-100 hover:bg-neutral-200 text-neutral-800 text-xs font-semibold rounded border border-neutral-300 transition"
+                                >
+                                    <i class="fas fa-plus mr-1 text-abv-blue"></i> Agregar Complemento
+                                </button>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+
+                <!-- 4. Alternativas de Sustitución (ALTERNATIVE_TO) -->
+                <div x-show="alternatives.length > 0" class="bg-amber-50/60 p-5 rounded-xl border border-amber-200 shadow-sm space-y-3">
+                    <div class="flex items-center justify-between pb-2 border-b border-amber-200">
+                        <h3 class="text-sm font-bold uppercase tracking-wider text-amber-900 flex items-center">
+                            <i class="fas fa-arrows-split-up-and-left text-amber-600 mr-2"></i> Alternativas y Sustitutos Directos
+                        </h3>
+                        <span class="text-xs font-mono font-bold text-amber-700" x-text="`${alternatives.length} alternativa(s)`"></span>
+                    </div>
+
+                    <div class="space-y-2">
+                        <template x-for="alt in alternatives" :key="alt.id">
+                            <div class="p-3 bg-white rounded-lg border border-amber-200 flex items-center justify-between">
+                                <div>
+                                    <span class="font-mono text-xs font-bold text-amber-800" x-text="alt.nombre_corto"></span>
+                                    <div class="text-xs font-medium text-neutral-800" x-text="alt.nombre_largo"></div>
+                                </div>
+                                <button
+                                    type="button"
+                                    @click="addToList(alt.id, alt.nombre_corto, alt.nombre_largo, 1, 'Alternativa Directa')"
+                                    class="py-1 px-3 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded shadow-sm transition"
+                                >
+                                    <i class="fas fa-plus mr-1"></i> Seleccionar Alternativa
+                                </button>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Columna Lateral: Lista de Materiales (BOM) en Memoria (4 cols / Toda la pantalla al imprimir) -->
+        <div class="lg:col-span-4 print-area space-y-4">
+            <div class="bg-white p-5 rounded-xl border border-abv-border shadow-sm space-y-4">
+                
+                <div class="flex items-center justify-between pb-3 border-b border-neutral-200">
+                    <div>
+                        <h2 class="text-base font-bold text-abv-dark flex items-center">
+                            <i class="fas fa-clipboard-list mr-2 text-abv-blue"></i> Lista de Materiales (BOM)
+                        </h2>
+                        <span class="text-[11px] text-neutral-500">Sesión en vivo &bull; No se guarda en BD</span>
+                    </div>
+                    <span class="font-mono text-xs font-extrabold text-abv-blue bg-blue-50 px-2 py-1 rounded border border-blue-200" x-text="`${totalItemsCount} pza(s)`"></span>
+                </div>
+
+                <!-- Estado Vacío -->
+                <div x-show="materialList.length === 0" class="py-8 text-center text-xs text-neutral-400 border-2 border-dashed border-neutral-200 rounded-lg">
+                    <i class="fas fa-cart-flatbed text-3xl mb-2 text-neutral-300"></i>
+                    <p class="font-semibold text-neutral-600">Tu lista está vacía.</p>
+                    <p class="mt-1">Selecciona un producto base y agrega los componentes compatibles requeridos.</p>
+                </div>
+
+                <!-- Lista de Partidas Agregadas -->
+                <div x-show="materialList.length > 0" class="space-y-2 max-h-80 overflow-y-auto pr-1">
+                    <template x-for="(item, idx) in materialList" :key="idx">
+                        <div class="p-2.5 bg-neutral-50 rounded-lg border border-neutral-200 text-xs flex items-center justify-between">
+                            <div class="overflow-hidden pr-2">
+                                <span class="font-mono font-bold text-abv-dark" x-text="item.nombre_corto"></span>
+                                <div class="text-[11px] text-neutral-600 truncate" x-text="item.nombre_largo"></div>
+                                <span class="text-[10px] text-neutral-400 uppercase font-mono" x-text="item.tipo"></span>
+                            </div>
+                            <div class="flex items-center gap-2 shrink-0">
+                                <div class="flex items-center border border-abv-border rounded bg-white overflow-hidden">
+                                    <button
+                                        type="button"
+                                        @click="decreaseQty(idx)"
+                                        class="px-2 py-0.5 text-neutral-600 hover:bg-neutral-100 font-bold"
+                                    >-</button>
+                                    <span class="px-2 py-0.5 font-mono font-bold text-abv-dark text-xs" x-text="item.quantity"></span>
+                                    <button
+                                        type="button"
+                                        @click="increaseQty(idx)"
+                                        class="px-2 py-0.5 text-neutral-600 hover:bg-neutral-100 font-bold"
+                                    >+</button>
+                                </div>
+                                <button
+                                    type="button"
+                                    @click="removeItem(idx)"
+                                    class="text-neutral-400 hover:text-red-600 transition"
+                                >
+                                    <i class="fas fa-trash-can"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+
+                <!-- Acciones de Lista -->
+                <div x-show="materialList.length > 0" class="pt-3 border-t border-neutral-200 space-y-2">
+                    <button
+                        type="button"
+                        onclick="window.print()"
+                        class="w-full py-2.5 bg-abv-green hover:bg-green-700 text-white text-xs font-bold rounded-lg shadow transition flex items-center justify-center gap-2"
+                    >
+                        <i class="fas fa-print"></i> Imprimir Lista de Materiales (BOM)
+                    </button>
+                    <button
+                        type="button"
+                        @click="materialList = []"
+                        class="w-full py-1.5 text-xs text-neutral-500 hover:text-red-600 transition"
+                    >
+                        Limpiar Lista
+                    </button>
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    function compatibilityExplorerApp() {
+        return {
+            selectedProductId: '',
+            selectedProduct: null,
+            compatibleComponents: [],
+            requiredAccessories: [],
+            complements: [],
+            alternatives: [],
+            materialList: [],
+
+            async loadProductTree() {
+                if (!this.selectedProductId) {
+                    this.selectedProduct = null;
+                    this.compatibleComponents = [];
+                    this.requiredAccessories = [];
+                    this.complements = [];
+                    this.alternatives = [];
+                    return;
+                }
+
+                try {
+                    const res = await fetch(`/api/v1/catalog/products/${this.selectedProductId}/tree/`);
+                    if (res.ok) {
+                        const data = await res.json();
+                        this.selectedProduct = data.product;
+                        this.compatibleComponents = data.compatible_components || [];
+                        this.requiredAccessories = data.required_accessories || [];
+                        this.complements = data.complements || [];
+                        this.alternatives = data.alternatives || [];
+                    }
+                } catch (e) {
+                    console.error('Error al cargar compatibilidades:', e);
+                }
+            },
+
+            addToList(id, nombre_corto, nombre_largo, quantity = 1, tipo = 'Componente') {
+                const existing = this.materialList.find(i => i.id === id);
+                if (existing) {
+                    existing.quantity += quantity;
+                } else {
+                    this.materialList.push({ id, nombre_corto, nombre_largo, quantity, tipo });
+                }
+            },
+
+            increaseQty(idx) {
+                this.materialList[idx].quantity += 1;
+            },
+
+            decreaseQty(idx) {
+                if (this.materialList[idx].quantity > 1) {
+                    this.materialList[idx].quantity -= 1;
+                } else {
+                    this.removeItem(idx);
+                }
+            },
+
+            removeItem(idx) {
+                this.materialList.splice(idx, 1);
+            },
+
+            get totalItemsCount() {
+                return this.materialList.reduce((acc, it) => acc + it.quantity, 0);
+            }
+        }
+    }
+</script>
+{% endblock %}

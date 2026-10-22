@@ -19,7 +19,6 @@ from django.contrib import admin
 from django.http import JsonResponse
 from django.urls import include, path
 
-import quotes.api  # noqa: F401
 from catalog.api import api
 
 
@@ -31,5 +30,5 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path("health/", health_check, name="health_check"),
     path("api/", api.urls),
-    path("quotes/", include("quotes.urls")),
+    path("", include("catalog.urls")),
 ]
