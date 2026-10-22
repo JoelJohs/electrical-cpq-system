@@ -93,6 +93,17 @@ class CatalogSelectorsTest(TestCase):
         self.assertEqual(len(search_res), 1)
         self.assertEqual(search_res[0].nombre_corto, "KIT-ZAP-225")
 
+        # Filtrado por categorías para escalas de miles de productos
+        tableros = list_active_products(category="tableros")
+        self.assertEqual(len(tableros), 1)
+        self.assertEqual(tableros[0].nombre_corto, "NQ-225-30P")
+
+        interruptores = list_active_products(category="interruptores")
+        self.assertEqual(len(interruptores), 3)
+
+        accesorios = list_active_products(category="accesorios")
+        self.assertEqual(len(accesorios), 2)
+
     def test_get_product_compatibilities(self):
         compatibilities = get_product_compatibilities(self.tablero.id)
         # 3 comp + 1 zapata + 1 req = 5

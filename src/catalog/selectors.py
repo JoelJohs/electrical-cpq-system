@@ -20,8 +20,11 @@ def get_product_by_nombre_corto(nombre_corto: str) -> Optional[Product]:
     ).first()
 
 
-def list_active_products(search: Optional[str] = None) -> QuerySet[Product]:
-    """Lista productos activos con búsqueda opcional por nombre corto o largo."""
+def list_active_products(
+    search: Optional[str] = None,
+    category: Optional[str] = None,
+) -> QuerySet[Product]:
+    """Lista productos activos con búsqueda opcional y filtro por categoría."""
     qs = Product.objects.filter(is_active=True).order_by("nombre_corto")
     if search:
         query = search.strip()
@@ -30,6 +33,31 @@ def list_active_products(search: Optional[str] = None) -> QuerySet[Product]:
             | Q(nombre_largo__icontains=query)
             | Q(descripcion__icontains=query)
         )
+    if category:
+        cat = category.strip().lower()
+        tablero_q = (
+            Q(nombre_largo__icontains="tablero")
+            | Q(nombre_largo__icontains="panel")
+            | Q(nombre_largo__icontains="gabinete")
+            | Q(nombre_corto__istartswith="NQ")
+            | Q(nombre_corto__istartswith="NF")
+            | Q(nombre_corto__istartswith="I-LINE")
+        )
+        interruptor_q = (
+            Q(nombre_largo__icontains="interruptor")
+            | Q(nombre_largo__icontains="breaker")
+            | Q(nombre_corto__istartswith="QO")
+            | Q(nombre_corto__istartswith="EDB")
+            | Q(nombre_corto__istartswith="FA")
+            | Q(nombre_corto__istartswith="LA")
+            | Q(nombre_corto__istartswith="HOM")
+        )
+        if cat == "tableros":
+            qs = qs.filter(tablero_q)
+        elif cat == "interruptores":
+            qs = qs.filter(interruptor_q)
+        elif cat == "accesorios":
+            qs = qs.exclude(tablero_q | interruptor_q)
     return qs
 
 
@@ -97,6 +125,7 @@ def get_product_compatibility_tree(
                 "nombre_largo": t.nombre_largo,
                 "descripcion": t.descripcion,
                 "is_active": t.is_active,
+                "category": t.category,
                 "notes": edge.notes,
             }
             if edge.relationship_type == RelationshipType.COMPATIBLE_WITH:
@@ -117,6 +146,7 @@ def get_product_compatibility_tree(
                 "nombre_largo": s.nombre_largo,
                 "descripcion": s.descripcion,
                 "is_active": s.is_active,
+                "category": s.category,
                 "notes": edge.notes,
             }
             if edge.relationship_type == RelationshipType.COMPATIBLE_WITH:
@@ -136,6 +166,7 @@ def get_product_compatibility_tree(
             "nombre_largo": product.nombre_largo,
             "descripcion": product.descripcion,
             "is_active": product.is_active,
+            "category": product.category,
         },
         "compatible_components": compatible_components,
         "required_accessories": required_accessories,

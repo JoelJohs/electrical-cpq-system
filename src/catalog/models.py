@@ -39,6 +39,26 @@ class Product(models.Model):
     def __str__(self):
         return f"{self.nombre_corto} - {self.nombre_largo}"
 
+    @property
+    def category(self) -> str:
+        """Infiere la categoría técnica del producto para clasificación y filtrado."""
+        text = f"{self.nombre_corto} {self.nombre_largo}".lower()
+        is_tablero = any(k in text for k in ["tablero", "panel", "gabinete"]) or (
+            self.nombre_corto.upper().startswith(("NQ", "NF", "I-LINE"))
+        )
+        if is_tablero:
+            return "tableros"
+
+        breaker_terms = ["interruptor", "breaker", "termomagnético", "pastilla"]
+        breaker_prefixes = ("QO", "EDB", "FA", "LA", "HOM")
+        is_breaker = any(k in text for k in breaker_terms) or (
+            self.nombre_corto.upper().startswith(breaker_prefixes)
+        )
+        if is_breaker:
+            return "interruptores"
+
+        return "accesorios"
+
     def get_compatible_items(self):
         """Retorna productos compatibles salientes de este producto."""
         return (

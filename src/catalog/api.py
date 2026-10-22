@@ -32,11 +32,12 @@ catalog_router = Router(tags=["Catálogo y Compatibilidades"])
 def list_products(
     request,
     search: Optional[str] = None,
+    category: Optional[str] = None,
     limit: int = 50,
     offset: int = 0,
 ):
-    """Lista productos activos con búsqueda por nombre corto o largo."""
-    qs = list_active_products(search=search)
+    """Lista productos activos con búsqueda y filtro por categoría."""
+    qs = list_active_products(search=search, category=category)
     total = qs.count()
     items = list(qs[offset : offset + limit])
     return {
@@ -48,6 +49,7 @@ def list_products(
                 "nombre_largo": p.nombre_largo,
                 "descripcion": p.descripcion,
                 "is_active": p.is_active,
+                "category": p.category,
             }
             for p in items
         ],
@@ -66,6 +68,7 @@ def get_product(request, product_id: int):
         "nombre_largo": product.nombre_largo,
         "descripcion": product.descripcion,
         "is_active": product.is_active,
+        "category": product.category,
     }
 
 

@@ -11,6 +11,7 @@ class ProductSchema(Schema):
     nombre_largo: str
     descripcion: str = ""
     is_active: bool = True
+    category: Optional[str] = ""
     notes: Optional[str] = ""
 
 
