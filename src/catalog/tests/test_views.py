@@ -67,3 +67,11 @@ class CatalogViewsTest(TestCase):
     def test_product_tree_json_404(self):
         response = self.client.get("/api/products/999999/tree/")
         self.assertEqual(response.status_code, 404)
+
+    def test_view_renders_panel_capacity_elements(self):
+        response = self.client.get("/")
+        self.assertEqual(response.status_code, 200)
+        # Elementos del medidor reactivo de capacidad y advertencias
+        self.assertContains(response, "occupiedSlots")
+        self.assertContains(response, "isPanelOverloaded")
+        self.assertContains(response, "Capacidad de ranuras")

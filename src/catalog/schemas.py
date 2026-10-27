@@ -10,8 +10,12 @@ class ProductSchema(Schema):
     nombre_corto: str
     nombre_largo: str
     descripcion: str = ""
+    categoria: Optional[str] = ""
+    imagen: Optional[str] = None
     is_active: bool = True
     category: Optional[str] = ""
+    poles: int = 0
+    max_slots: int = 0
     notes: Optional[str] = ""
 
 

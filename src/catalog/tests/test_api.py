@@ -130,3 +130,21 @@ class CatalogAPITest(TestCase):
         self.assertEqual(resp2.status_code, 200)
         self.assertEqual(len(ctx2), 0)
         self.assertEqual(resp1.json(), resp2.json())
+
+    def test_api_tree_exposes_poles_and_max_slots(self):
+        response = self.client.get(f"/api/v1/catalog/products/{self.tablero.id}/tree/")
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+
+        # El producto anfitrión expone sus slots máximos
+        self.assertEqual(data["product"]["max_slots"], 30)
+
+        # Los componentes derivados exponen su número de polos
+        self.assertGreater(len(data["compatible_components"]), 0)
+        comp = data["compatible_components"][0]
+        self.assertEqual(comp["nombre_corto"], "QO-120")
+        self.assertEqual(comp["poles"], 1)
+
+        # Campos categoria e imagen presentes en schema
+        self.assertIn("categoria", data["product"])
+        self.assertIn("imagen", data["product"])

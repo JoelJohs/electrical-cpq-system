@@ -130,3 +130,37 @@ class ProductModelTest(TestCase):
 
         components = list(self.tablero.get_compatible_items())
         self.assertEqual(len(components), 0)
+
+    def test_product_poles_and_max_slots_inference(self):
+        # Tablero infiere max_slots a partir de descripción o nombre
+        self.assertEqual(self.tablero.max_slots, 30)
+
+        # Interruptor infiere polos (1P)
+        self.assertEqual(self.interruptor.poles, 1)
+
+        # Interruptores de 2 y 3 polos
+        breaker_2p = Product.objects.create(
+            nombre_corto="QO-230",
+            nombre_largo="Interruptor Termomagnético QO 2 Polos 30A",
+            descripcion="Interruptor 2P",
+        )
+        breaker_3p = Product.objects.create(
+            nombre_corto="EDB-3100",
+            nombre_largo="Interruptor Termomagnético EDB 3 Polos 100A",
+            descripcion="Interruptor 3P",
+        )
+        self.assertEqual(breaker_2p.poles, 2)
+        self.assertEqual(breaker_3p.poles, 3)
+
+        # Accesorio no tiene polos ni ranuras de anfitrión
+        self.assertEqual(self.accesorio.poles, 0)
+        self.assertEqual(self.accesorio.max_slots, 0)
+
+        # Campos categoria e imagen opcionales
+        p_con_categoria = Product.objects.create(
+            nombre_corto="MOD-CUSTOM",
+            nombre_largo="Módulo especial con categoría explícita",
+            categoria="accesorios",
+        )
+        self.assertEqual(p_con_categoria.categoria, "accesorios")
+        self.assertFalse(p_con_categoria.imagen)

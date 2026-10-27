@@ -1,5 +1,7 @@
 """Modelos del catálogo y grafo de compatibilidades eléctricas."""
 
+import re
+
 from django.core.exceptions import ValidationError
 from django.db import models
 
@@ -22,6 +24,18 @@ class Product(models.Model):
         blank=True,
         default="",
         help_text="Descripción o especificaciones técnicas del producto",
+    )
+    categoria = models.CharField(
+        max_length=50,
+        blank=True,
+        default="",
+        help_text="Categoría técnica opcional (tableros, interruptores, accesorios)",
+    )
+    imagen = models.ImageField(
+        upload_to="products/",
+        blank=True,
+        null=True,
+        help_text="Imagen ilustrativa opcional del producto",
     )
     is_active = models.BooleanField(
         default=True,
@@ -47,7 +61,10 @@ class Product(models.Model):
 
     @property
     def category(self) -> str:
-        """Infiere la categoría técnica del producto para clasificación y filtrado."""
+        """Categoría técnica del producto (explícita o inferida)."""
+        if self.categoria:
+            return self.categoria.strip().lower()
+
         text = f"{self.nombre_corto} {self.nombre_largo}".lower()
         is_tablero = any(k in text for k in ["tablero", "panel", "gabinete"]) or (
             self.nombre_corto.upper().startswith(("NQ", "NF", "I-LINE"))
@@ -64,6 +81,42 @@ class Product(models.Model):
             return "interruptores"
 
         return "accesorios"
+
+    @property
+    def poles(self) -> int:
+        """Número de polos ocupados por el componente derivado (1, 2, 3...)."""
+        if self.category != "interruptores":
+            return 0
+
+        text = f"{self.nombre_largo} {self.descripcion}".lower()
+        match = re.search(r"\b([1-4])\s*(?:polo|polos|p)\b", text)
+        if match:
+            return int(match.group(1))
+
+        # Inferencia por nomenclatura estándar (ej. QO-120 -> 1P, EDB-3100 -> 3P)
+        code = self.nombre_corto.upper()
+        num_match = re.search(r"^[A-Z]+-([1-4])\d{2}", code)
+        if num_match:
+            return int(num_match.group(1))
+
+        return 1
+
+    @property
+    def max_slots(self) -> int:
+        """Capacidad máxima de polos/ranuras si el producto es un tablero anfitrión."""
+        if self.category != "tableros":
+            return 0
+
+        text = f"{self.nombre_largo} {self.descripcion} {self.nombre_corto}".lower()
+        match = re.search(r"\b(\d+)\s*(?:polos|ranuras|circuitos|espacios)\b", text)
+        if match:
+            return int(match.group(1))
+
+        code_match = re.search(r"-(\d+)p\b", text)
+        if code_match:
+            return int(code_match.group(1))
+
+        return 30  # Capacidad estándar típica para tableros tipo NQ si no se especifica
 
     def get_compatible_items(self):
         """Retorna productos compatibles salientes de este producto."""

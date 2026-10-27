@@ -157,8 +157,12 @@ def get_product_compatibility_tree(
                 "nombre_corto": t.nombre_corto,
                 "nombre_largo": t.nombre_largo,
                 "descripcion": t.descripcion,
+                "categoria": t.categoria,
+                "imagen": t.imagen.url if t.imagen else None,
                 "is_active": t.is_active,
                 "category": t.category,
+                "poles": t.poles,
+                "max_slots": t.max_slots,
                 "notes": edge.notes,
             }
             if edge.relationship_type == RelationshipType.COMPATIBLE_WITH:
@@ -178,8 +182,12 @@ def get_product_compatibility_tree(
                 "nombre_corto": s.nombre_corto,
                 "nombre_largo": s.nombre_largo,
                 "descripcion": s.descripcion,
+                "categoria": s.categoria,
+                "imagen": s.imagen.url if s.imagen else None,
                 "is_active": s.is_active,
                 "category": s.category,
+                "poles": s.poles,
+                "max_slots": s.max_slots,
                 "notes": edge.notes,
             }
             if edge.relationship_type == RelationshipType.COMPATIBLE_WITH:
@@ -198,8 +206,12 @@ def get_product_compatibility_tree(
             "nombre_corto": product.nombre_corto,
             "nombre_largo": product.nombre_largo,
             "descripcion": product.descripcion,
+            "categoria": product.categoria,
+            "imagen": product.imagen.url if product.imagen else None,
             "is_active": product.is_active,
             "category": product.category,
+            "poles": product.poles,
+            "max_slots": product.max_slots,
         },
         "compatible_components": compatible_components,
         "required_accessories": required_accessories,

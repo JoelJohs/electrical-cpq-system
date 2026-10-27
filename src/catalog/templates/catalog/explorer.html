@@ -446,10 +446,13 @@
                                     </button>
                                     <button
                                         type="button"
-                                        @click="addToList(comp.id, comp.nombre_corto, comp.nombre_largo, 1, 'Componente Derivado')"
-                                        class="py-2.5 sm:py-2 px-2 bg-abv-blue hover:bg-abv-blue-hover text-white text-xs font-bold rounded-lg transition flex items-center justify-center gap-1.5 min-h-[42px]"
+                                        @click="addToList(comp.id, comp.nombre_corto, comp.nombre_largo, 1, 'Componente Derivado', comp.poles || 1)"
+                                        :disabled="isPanelFull"
+                                        :class="isPanelFull ? 'opacity-50 cursor-not-allowed bg-neutral-400 text-white' : 'bg-abv-blue hover:bg-abv-blue-hover text-white'"
+                                        class="py-2.5 sm:py-2 px-2 text-xs font-bold rounded-lg transition flex items-center justify-center gap-1.5 min-h-[42px]"
                                     >
-                                        <i class="fas fa-plus text-[10px]"></i> Agregar
+                                        <i class="fas fa-plus text-[10px]"></i>
+                                        <span x-text="isPanelFull ? 'Lleno' : 'Agregar'"></span>
                                     </button>
                                 </div>
                             </div>
@@ -674,6 +677,24 @@
                         :class="materialList.length > 0 ? 'bg-blue-50 text-abv-blue border-blue-200' : 'bg-neutral-100 text-neutral-400 border-neutral-200'"
                         x-text="`${totalItemsCount} pza(s)`"
                     ></span>
+                </div>
+
+                <!-- Medidor de Capacidad de Ranuras y Alerta de Sobrecupo Desktop -->
+                <div x-show="activePanel" class="p-3 bg-blue-50/60 rounded-lg border border-blue-200 text-xs space-y-2">
+                    <div class="flex items-center justify-between">
+                        <span class="font-bold text-neutral-800 text-[11px] flex items-center gap-1.5">
+                            <i class="fas fa-server text-abv-blue"></i> Capacidad de ranuras:
+                        </span>
+                        <span class="font-mono font-bold text-xs" :class="isPanelOverloaded ? 'text-red-600' : 'text-neutral-700'" x-text="`${occupiedSlots} / ${panelMaxSlots} polos`"></span>
+                    </div>
+                    <div class="w-full bg-neutral-200 h-2 rounded-full overflow-hidden">
+                        <div class="h-full transition-all duration-300" :class="isPanelOverloaded ? 'bg-red-600' : (occupiedSlots >= panelMaxSlots ? 'bg-amber-500' : 'bg-abv-blue')" :style="`width: ${Math.min(100, (occupiedSlots / (panelMaxSlots || 1)) * 100)}%`"></div>
+                    </div>
+                    <!-- Alerta de Sobrecupo -->
+                    <div x-show="isPanelOverloaded" class="p-2 bg-red-100 border border-red-300 rounded text-red-800 text-[11px] flex items-start gap-1.5">
+                        <i class="fas fa-triangle-exclamation text-red-600 mt-0.5 shrink-0"></i>
+                        <span><strong>Sobrecupo:</strong> Se ha superado la capacidad física de ranuras del tablero.</span>
+                    </div>
                 </div>
 
                 <!-- Estado Vacío Desktop -->
@@ -1255,12 +1276,41 @@
                 );
             },
 
-            addToList(id, nombre_corto, nombre_largo, quantity = 1, tipo = 'Material') {
+            get activePanel() {
+                if (this.selectedProduct && this.selectedProduct.category === 'tableros') {
+                    return this.selectedProduct;
+                }
+                const panelInList = this.materialList.find(i => i.tipo === 'Tablero Anfitrión' || i.category === 'tableros');
+                if (panelInList) return panelInList;
+                return null;
+            },
+
+            get occupiedSlots() {
+                return this.materialList.reduce((acc, it) => acc + ((it.poles || 0) * it.quantity), 0);
+            },
+
+            get panelMaxSlots() {
+                return this.activePanel ? (this.activePanel.max_slots || 30) : 0;
+            },
+
+            get isPanelOverloaded() {
+                return this.activePanel && (this.occupiedSlots > this.panelMaxSlots);
+            },
+
+            get isPanelFull() {
+                return this.activePanel && (this.occupiedSlots >= this.panelMaxSlots);
+            },
+
+            addToList(id, nombre_corto, nombre_largo, quantity = 1, tipo = 'Material', poles = 0) {
+                if (this.isPanelFull && poles > 0) {
+                    this.showToast(`No es posible agregar: el tablero ha alcanzado su capacidad máxima (${this.panelMaxSlots} polos).`, 'fas fa-triangle-exclamation text-amber-500');
+                    return;
+                }
                 const existing = this.materialList.find(i => i.id === id);
                 if (existing) {
                     existing.quantity += quantity;
                 } else {
-                    this.materialList.push({ id, nombre_corto, nombre_largo, quantity, tipo });
+                    this.materialList.push({ id, nombre_corto, nombre_largo, quantity, tipo, poles });
                 }
                 this.showToast(`Agregado: ${nombre_corto} (+${quantity})`, 'fas fa-check-circle text-abv-green');
             },
